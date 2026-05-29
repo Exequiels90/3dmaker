@@ -1,0 +1,328 @@
+{% extends "layout.html" %}
+
+{% block title %}Configuration - 3D Workshop Management{% endblock %}
+
+{% block page_title %}System Configuration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Global Settings -->
+    <div class="col-lg-6">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-sliders-h mr-2"></i> Global System Settings
+                </h3>
+            </div>
+            
+            <form id="configForm">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="kwhCost">Electricity Cost ($ per kWh)</label>
+                        <input type="number" id="kwhCost" class="form-control" min="0" step="0.001" 
+                               value="{{ config.kwh_cost }}" required>
+                        <small class="text-muted">Enter your local electricity rate</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="laborHourCost">Labor Hour Cost ($ per hour)</label>
+                        <input type="number" id="laborHourCost" class="form-control" min="0" step="0.01" 
+                               value="{{ config.labor_hour_cost }}" required>
+                        <small class="text-muted">How much your technical labor/time is worth</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="baseProfitMargin">Base Profit Margin (%)</label>
+                        <input type="number" id="baseProfitMargin" class="form-control" min="0" step="1" 
+                               value="{{ config.base_profit_margin }}" required>
+                        <small class="text-muted">Markup percentage on production cost (e.g., 150%)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="failMarginMultiplier">Failure Risk Multiplier</label>
+                        <input type="number" id="failMarginMultiplier" class="form-control" min="1" step="0.01" 
+                               value="{{ config.fail_margin_multiplier }}" required>
+                        <small class="text-muted">Recargo factor for failure risk (e.g., 1.05 = 5% extra)</small>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save mr-2"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Printers Management -->
+    <div class="col-lg-6">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-print mr-2"></i> Printers
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool btn-sm" id="togglePrinterForm">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- New Printer Form -->
+                <div id="printerForm" class="mb-3" style="display:none;">
+                    <div class="input-group mb-2">
+                        <input type="text" id="printerName" class="form-control" placeholder="Printer name">
+                        <input type="number" id="printerWatts" class="form-control" placeholder="Watts" min="0">
+                    </div>
+                    <div class="input-group mb-2">
+                        <input type="number" id="printerPrice" class="form-control" placeholder="Purchase price $" min="0">
+                        <input type="number" id="printerLifespan" class="form-control" placeholder="Lifespan (hours)" min="1" value="5000">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-info btn-block" id="savePrinterBtn">Add Printer</button>
+                </div>
+                
+                <!-- Printers List -->
+                <table class="table table-sm" id="printersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Power</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Deprec/h</th>
+                        </tr>
+                    </thead>
+                    <tbody id="printersList">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance Logs -->
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-wrench mr-2"></i> Maintenance History
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool btn-sm" id="toggleMaintenanceForm">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- New Maintenance Log Form -->
+                <div id="maintenanceForm" class="card card-light mb-3" style="display:none;">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="maintenancePrinter">Printer</label>
+                                    <select id="maintenancePrinter" class="form-select">
+                                        <option value="">-- Select --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="maintenanceCost">Cost ($)</label>
+                                    <input type="number" id="maintenanceCost" class="form-control" min="0" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="maintenanceDesc">Description</label>
+                                    <input type="text" id="maintenanceDesc" class="form-control" placeholder="e.g., Nozzle replacement, belt tension">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" id="saveMaintenanceBtn">Log Maintenance</button>
+                    </div>
+                </div>
+                
+                <!-- Maintenance Log Table -->
+                <table class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Printer</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody id="maintenanceBody">
+                        {% for log in maintenance_logs %}
+                        <tr>
+                            <td>{{ log.printer.name }}</td>
+                            <td>{{ log.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ log.description }}</td>
+                            <td>${{ '%.2f'|format(log.cost) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Config Form Submit
+document.getElementById('configForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const configData = {
+        kwh_cost: parseFloat(document.getElementById('kwhCost').value),
+        labor_hour_cost: parseFloat(document.getElementById('laborHourCost').value),
+        base_profit_margin: parseFloat(document.getElementById('baseProfitMargin').value),
+        fail_margin_multiplier: parseFloat(document.getElementById('failMarginMultiplier').value)
+    };
+    
+    try {
+        const response = await fetch('/api/config/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configData)
+        });
+        
+        if (response.ok) {
+            alert('Settings saved successfully');
+        } else {
+            alert('Error saving settings');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Printer Form
+document.getElementById('togglePrinterForm').addEventListener('click', function() {
+    const form = document.getElementById('printerForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('savePrinterBtn').addEventListener('click', async function() {
+    const printerData = {
+        name: document.getElementById('printerName').value,
+        power_consumption: parseFloat(document.getElementById('printerWatts').value),
+        purchase_price: parseFloat(document.getElementById('printerPrice').value),
+        estimated_lifespan: parseFloat(document.getElementById('printerLifespan').value)
+    };
+    
+    if (!printerData.name || !printerData.power_consumption || !printerData.purchase_price) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/printers/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(printerData)
+        });
+        
+        if (response.ok) {
+            alert('Printer added successfully');
+            document.getElementById('printerName').value = '';
+            document.getElementById('printerWatts').value = '';
+            document.getElementById('printerPrice').value = '';
+            document.getElementById('printerLifespan').value = '5000';
+            document.getElementById('printerForm').style.display = 'none';
+            loadPrinters();
+        } else {
+            alert('Error adding printer');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Maintenance Form
+document.getElementById('toggleMaintenanceForm').addEventListener('click', function() {
+    const form = document.getElementById('maintenanceForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('saveMaintenanceBtn').addEventListener('click', async function() {
+    const printerId = document.getElementById('maintenancePrinter').value;
+    if (!printerId) {
+        alert('Please select a printer');
+        return;
+    }
+    
+    const maintenanceData = {
+        printer_id: parseInt(printerId),
+        description: document.getElementById('maintenanceDesc').value,
+        cost: parseFloat(document.getElementById('maintenanceCost').value) || 0
+    };
+    
+    try {
+        const response = await fetch('/api/maintenance/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(maintenanceData)
+        });
+        
+        if (response.ok) {
+            alert('Maintenance logged successfully');
+            document.getElementById('maintenancePrinter').value = '';
+            document.getElementById('maintenanceDesc').value = '';
+            document.getElementById('maintenanceCost').value = '';
+            document.getElementById('maintenanceForm').style.display = 'none';
+            location.reload(); // Reload to show new log
+        } else {
+            alert('Error logging maintenance');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Load printers
+function loadPrinters() {
+    fetch('/api/printers')
+        .then(r => r.json())
+        .then(printers => {
+            // Populate table
+            const tbody = document.getElementById('printersList');
+            tbody.innerHTML = '';
+            printers.forEach(p => {
+                const statusBadge = p.needs_maintenance ? 
+                    '<span class="badge bg-warning">Maintenance Due</span>' :
+                    '<span class="badge bg-success">OK</span>';
+                
+                const row = `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.power_consumption}W</td>
+                        <td>${p.accumulated_hours.toFixed(1)}h</td>
+                        <td>${statusBadge}</td>
+                        <td>$${p.depreciation_per_hour.toFixed(2)}/h</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            
+            // Populate maintenance selector
+            const selector = document.getElementById('maintenancePrinter');
+            selector.innerHTML = '<option value="">-- Select --</option>';
+            printers.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                selector.appendChild(option);
+            });
+        });
+}
+
+// Load data on page init
+document.addEventListener('DOMContentLoaded', loadPrinters);
+</script>
+{% endblock %}

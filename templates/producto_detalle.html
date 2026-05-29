@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block body %}
+  <div class="container mt-4">
+    <h2>{{ product.name }}</h2>
+    <p>Peso: {{ product.weight_grams }} g</p>
+    <p>Tiempo impresión: {{ product.print_time_hours }} h</p>
+    <p>Tiempo post-proceso: {{ product.postproc_time_hours }} h</p>
+
+    <div class="row">
+      <div class="col-md-6">
+        <canvas id="costChart"></canvas>
+      </div>
+      <div class="col-md-6">
+        <ul class="list-group">
+          <li class="list-group-item">Material: ${{ '%.2f'|format(breakdown.material) }}</li>
+          <li class="list-group-item">Luz: ${{ '%.2f'|format(breakdown.light) }}</li>
+          <li class="list-group-item">Amortización: ${{ '%.2f'|format(breakdown.amortization) }}</li>
+          <li class="list-group-item">Mano de obra: ${{ '%.2f'|format(breakdown.labor) }}</li>
+          <li class="list-group-item">Insumos: ${{ '%.2f'|format(breakdown.supplies) }}</li>
+          <li class="list-group-item">Adicionales: ${{ '%.2f'|format(breakdown.additional) }}</li>
+          <li class="list-group-item active">Total: ${{ '%.2f'|format(breakdown.total) }}</li>
+          <li class="list-group-item">Precio sugerido: ${{ '%.2f'|format(breakdown.suggested_price) }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      fetch('/api/grafico-costos/{{ product.id }}')
+        .then(r => r.json())
+        .then(data => {
+          const ctx = document.getElementById('costChart').getContext('2d')
+          new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: data.labels,
+              datasets: [{ data: data.data, backgroundColor: ['#4e73df','#1cc88a','#36b9cc','#f6c23e','#858796','#e74a3b'] }]
+            }
+          })
+        })
+    </script>
+  </div>
+{% endblock %}

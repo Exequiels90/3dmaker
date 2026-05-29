@@ -1,0 +1,337 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - 3D Printing Workshop{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPIs Row -->
+<div class="row">
+    <!-- Monthly Revenue -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>${{ '%.2f'|format(monthly_revenue) }}</h3>
+                <p>Monthly Revenue</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <a href="{{ url_for('main.sales') }}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Net Profit -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>${{ '%.2f'|format(monthly_profit) }}</h3>
+                <p>Net Profit (This Month)</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <a href="{{ url_for('main.sales') }}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filament Stock -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ '%.1f'|format(total_filament_kg) }}<sup style="font-size:20px">kg</sup></h3>
+                <p>Total Filament in Stock</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <a href="{{ url_for('main.inventory') }}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Active Alerts -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ total_alerts }}</h3>
+                <p>Active Alerts</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <a href="{{ url_for('main.inventory') }}" class="small-box-footer">
+                {% if low_stock_count > 0 %}{{ low_stock_count }} low stock {% endif %}
+                {% if maintenance_count > 0 %}{{ maintenance_count }} maintenance needed{% endif %}
+                <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Revenue vs Costs Chart -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Revenue vs Costs (Last 12 Months)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueVsCostsChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Waste Trends Chart -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line mr-2"></i> Waste Trends
+                </h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chartWasteTrends" style="max-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cost Breakdown Section -->
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie mr-2"></i> Cost Breakdown by Product
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="productSelector" class="form-label">Select Product:</label>
+                        <select id="productSelector" class="form-select">
+                            <option value="">-- Choose a product --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="costBreakdownContainer" class="row">
+                    <div class="col-lg-6">
+                        <canvas id="chartCostBreakdown" style="max-height: 400px;"></canvas>
+                    </div>
+                    <div class="col-lg-6">
+                        <div id="costBreakdownTable"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadRevenueVsCostsChart();
+    loadWasteTrendsChart();
+    loadProductSelector();
+});
+
+// Chart instances
+let chartRevenueVsCosts = null;
+let chartWasteTrends = null;
+let chartCostBreakdown = null;
+
+// Load Revenue vs Costs Chart
+function loadRevenueVsCostsChart() {
+    fetch('/api/chart/revenue-vs-costs')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartRevenueVsCosts').getContext('2d');
+            if (chartRevenueVsCosts) chartRevenueVsCosts.destroy();
+            chartRevenueVsCosts = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Revenue ($)',
+                            data: data.datasets[0].data,
+                            backgroundColor: '#28a745',
+                            borderColor: '#1e7e34',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Costs ($)',
+                            data: data.datasets[1].data,
+                            backgroundColor: '#dc3545',
+                            borderColor: '#a71d2a',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount ($)' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading chart:', err));
+}
+
+// Load Waste Trends Chart
+function loadWasteTrendsChart() {
+    fetch('/api/chart/waste-trends')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartWasteTrends').getContext('2d');
+            if (chartWasteTrends) chartWasteTrends.destroy();
+            chartWasteTrends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Waste (grams)' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading waste chart:', err));
+}
+
+// Load product selector
+function loadProductSelector() {
+    fetch('/api/products')
+        .then(r => r.json())
+        .then(products => {
+            const selector = document.getElementById('productSelector');
+            products.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                selector.appendChild(option);
+            });
+            
+            // Load first product on change
+            selector.addEventListener('change', function() {
+                if (this.value) {
+                    loadCostBreakdown(this.value);
+                }
+            });
+        })
+        .catch(err => console.error('Error loading products:', err));
+}
+
+// Load Cost Breakdown Chart
+function loadCostBreakdown(productId) {
+    fetch(`/api/chart/cost-breakdown/${productId}`)
+        .then(r => r.json())
+        .then(data => {
+            // Pie Chart
+            const ctx = document.getElementById('chartCostBreakdown').getContext('2d');
+            if (chartCostBreakdown) chartCostBreakdown.destroy();
+            chartCostBreakdown = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+            
+            // Table
+            const table = `
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Component</th>
+                            <th>Amount ($)</th>
+                            <th>% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.labels.map((label, i) => `
+                            <tr>
+                                <td>${label}</td>
+                                <td>$${data.data[i].toFixed(2)}</td>
+                                <td>${data.percentages[i].toFixed(1)}%</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="fw-bold">
+                            <td>Total Production Cost</td>
+                            <td>$${data.total.toFixed(2)}</td>
+                            <td>100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('costBreakdownTable').innerHTML = table;
+        })
+        .catch(err => console.error('Error loading cost breakdown:', err));
+}
+</script>
+
+<style>
+.kpi-box {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-left: 4px solid;
+}
+
+.kpi-box.success { border-left-color: #28a745; }
+.kpi-box.info { border-left-color: #17a2b8; }
+.kpi-box.warning { border-left-color: #ffc107; }
+.kpi-box.danger { border-left-color: #dc3545; }
+
+.kpi-box .number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.kpi-box .label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+</style>
+{% endblock %}

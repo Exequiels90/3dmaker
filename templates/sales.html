@@ -1,0 +1,409 @@
+{% extends "layout.html" %}
+
+{% block title %}Sales - 3D Workshop Management{% endblock %}
+
+{% block page_title %}Sales & Orders Management{% endblock %}
+
+{% block content %}
+<!-- New Sale Form Card -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-plus-circle mr-2"></i> Create New Order
+                </h3>
+            </div>
+            
+            <form id="newOrderForm">
+                <div class="card-body">
+                    <!-- Customer Section -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="customerSelect">Select Customer or Create New</label>
+                                <select id="customerSelect" class="form-select">
+                                    <option value="">-- New Customer --</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}">{{ customer.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="customerName">Customer Name</label>
+                                <input type="text" id="customerName" class="form-control" placeholder="Optional - auto-filled if selected">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Channel & Payment -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="channel">Sale Channel</label>
+                                <select id="channel" class="form-select">
+                                    <option value="Local">Local</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Web">Web</option>
+                                    <option value="WhatsApp">WhatsApp</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="paymentMethod">Payment Method</label>
+                                <select id="paymentMethod" class="form-select">
+                                    <option value="Efectivo">Cash</option>
+                                    <option value="Transferencia">Transfer</option>
+                                    <option value="Mercado Pago">Mercado Pago</option>
+                                    <option value="Tarjeta">Credit Card</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="platformFee">Platform Fee (%)</label>
+                                <input type="number" id="platformFee" class="form-control" value="0" min="0" max="100" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="totalAmount">Total Amount Billed</label>
+                                <input type="number" id="totalAmount" class="form-control" readonly value="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Items Table -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label>Order Items</label>
+                            <table class="table table-hover" id="itemsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Production Cost</th>
+                                        <th>Suggested Price</th>
+                                        <th>Final Price (Unit)</th>
+                                        <th>Line Total</th>
+                                        <th><button type="button" class="btn btn-sm btn-success" id="addRowBtn">
+                                            <i class="fas fa-plus"></i> Add Item
+                                        </button></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsBody">
+                                    <tr class="item-row">
+                                        <td>
+                                            <select class="form-select form-select-sm product-select" required>
+                                                <option value="">-- Select --</option>
+                                                {% for product in products %}
+                                                <option value="{{ product.id }}" data-cost="{{ product.calculate_production_cost(config)['total'] }}" data-suggested="{{ product.suggested_price }}">
+                                                    {{ product.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td><input type="number" class="form-control form-control-sm quantity-input" value="1" min="1" required></td>
+                                        <td><span class="prod-cost">0.00</span></td>
+                                        <td><span class="suggested-price">0.00</span></td>
+                                        <td><input type="number" class="form-control form-control-sm unit-price-input" value="0" min="0" step="0.01" required></td>
+                                        <td><span class="line-total">0.00</span></td>
+                                        <td><button type="button" class="btn btn-sm btn-danger remove-row">
+                                            <i class="fas fa-trash"></i>
+                                        </button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i> Create Order
+                    </button>
+                    <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Sales History Table -->
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history mr-2"></i> Sales History
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <!-- Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <select id="filterStatus" class="form-select form-select-sm">
+                            <option value="">-- All Status --</option>
+                            <option value="Pending">Pending</option>
+                            <option value="In Production">In Production</option>
+                            <option value="Ready">Ready</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filterChannel" class="form-select form-select-sm">
+                            <option value="">-- All Channels --</option>
+                            <option value="Local">Local</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Web">Web</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-sm btn-primary" id="applyFilters">
+                            <i class="fas fa-filter mr-1"></i> Apply Filters
+                        </button>
+                        <button class="btn btn-sm btn-secondary" id="clearFilters">Clear</button>
+                    </div>
+                </div>
+                
+                <table id="salesTable" class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Amount Billed</th>
+                            <th>Production Cost</th>
+                            <th>Net Profit</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form handling
+document.getElementById('newOrderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Validate items
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length === 0) {
+        alert('Please add at least one item');
+        return;
+    }
+    
+    const items = [];
+    let total = 0;
+    
+    rows.forEach(row => {
+        const productSelect = row.querySelector('.product-select');
+        const quantity = parseInt(row.querySelector('.quantity-input').value) || 1;
+        const unitPrice = parseFloat(row.querySelector('.unit-price-input').value) || 0;
+        
+        if (!productSelect.value) {
+            alert('Please select a product for all items');
+            throw new Error('Validation failed');
+        }
+        
+        items.push({
+            product_id: parseInt(productSelect.value),
+            quantity: quantity,
+            unit_price: unitPrice
+        });
+        
+        total += unitPrice * quantity;
+    });
+    
+    const orderData = {
+        customer_id: document.getElementById('customerSelect').value || null,
+        customer_name: document.getElementById('customerName').value,
+        channel: document.getElementById('channel').value,
+        payment_method: document.getElementById('paymentMethod').value,
+        platform_fee_percentage: parseFloat(document.getElementById('platformFee').value) || 0,
+        items: items,
+        total_amount_billed: total
+    };
+    
+    try {
+        const response = await fetch('/api/sales/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert(`Order created! ID: ${result.order_id}, Profit: $${result.profit.toFixed(2)}`);
+            this.reset();
+            document.getElementById('itemsBody').innerHTML = '<tr class="item-row">...</tr>';
+            loadSalesHistory();
+        } else {
+            alert(`Error: ${result.error}`);
+        }
+    } catch (err) {
+        alert('Error creating order: ' + err.message);
+    }
+});
+
+// Add/Remove items
+document.getElementById('addRowBtn').addEventListener('click', addItemRow);
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-row')) {
+        const row = e.target.closest('.item-row');
+        if (document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+            updateTotalAmount();
+        } else {
+            alert('At least one item is required');
+        }
+    }
+});
+
+// Update values
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('product-select') || 
+        e.target.classList.contains('quantity-input') || 
+        e.target.classList.contains('unit-price-input')) {
+        updateRowValues(e.target.closest('.item-row'));
+        updateTotalAmount();
+    }
+});
+
+function addItemRow() {
+    const row = document.querySelector('.item-row').cloneNode(true);
+    row.querySelector('.product-select').value = '';
+    row.querySelector('.quantity-input').value = '1';
+    row.querySelector('.unit-price-input').value = '0';
+    row.querySelector('.prod-cost').textContent = '0.00';
+    row.querySelector('.suggested-price').textContent = '0.00';
+    row.querySelector('.line-total').textContent = '0.00';
+    document.getElementById('itemsBody').appendChild(row);
+}
+
+function updateRowValues(row) {
+    const select = row.querySelector('.product-select');
+    const quantity = parseInt(row.querySelector('.quantity-input').value) || 1;
+    const prodCost = parseFloat(select.options[select.selectedIndex]?.dataset.cost || 0);
+    const suggestedPrice = parseFloat(select.options[select.selectedIndex]?.dataset.suggested || 0);
+    
+    row.querySelector('.prod-cost').textContent = prodCost.toFixed(2);
+    row.querySelector('.suggested-price').textContent = suggestedPrice.toFixed(2);
+    
+    // Auto-fill unit price if empty
+    const unitPriceInput = row.querySelector('.unit-price-input');
+    if (!unitPriceInput.value || unitPriceInput.value === '0') {
+        unitPriceInput.value = suggestedPrice.toFixed(2);
+    }
+    
+    const unitPrice = parseFloat(unitPriceInput.value) || 0;
+    row.querySelector('.line-total').textContent = (unitPrice * quantity).toFixed(2);
+}
+
+function updateTotalAmount() {
+    const rows = document.querySelectorAll('.item-row');
+    let total = 0;
+    rows.forEach(row => {
+        const quantity = parseInt(row.querySelector('.quantity-input').value) || 0;
+        const unitPrice = parseFloat(row.querySelector('.unit-price-input').value) || 0;
+        total += quantity * unitPrice;
+    });
+    document.getElementById('totalAmount').value = total.toFixed(2);
+}
+
+// Load sales history
+function loadSalesHistory() {
+    const status = document.getElementById('filterStatus').value;
+    const channel = document.getElementById('filterChannel').value;
+    
+    let url = '/api/sales/list';
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (channel) params.append('channel', channel);
+    if (params.toString()) url += '?' + params.toString();
+    
+    fetch(url)
+        .then(r => r.json())
+        .then(orders => {
+            const tbody = document.getElementById('salesBody');
+            tbody.innerHTML = '';
+            orders.forEach(order => {
+                const row = `
+                    <tr>
+                        <td><strong>#${order.id}</strong></td>
+                        <td>${order.customer}</td>
+                        <td>${new Date(order.date).toLocaleDateString()}</td>
+                        <td>${order.items_count}</td>
+                        <td>$${order.amount_billed.toFixed(2)}</td>
+                        <td>$${order.production_cost.toFixed(2)}</td>
+                        <td><strong class="${order.profit > 0 ? 'text-success' : 'text-danger'}">$${order.profit.toFixed(2)}</strong></td>
+                        <td><span class="badge bg-${statusColor(order.status)}">${order.status}</span></td>
+                        <td>
+                            <select class="form-select form-select-sm status-selector" data-order-id="${order.id}" value="${order.status}">
+                                <option value="Pending">Pending</option>
+                                <option value="In Production">In Production</option>
+                                <option value="Ready">Ready</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        });
+}
+
+function statusColor(status) {
+    const colors = {
+        'Pending': 'warning',
+        'In Production': 'info',
+        'Ready': 'primary',
+        'Delivered': 'success',
+        'Cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+// Event listeners
+document.getElementById('applyFilters').addEventListener('click', loadSalesHistory);
+document.getElementById('clearFilters').addEventListener('click', function() {
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterChannel').value = '';
+    loadSalesHistory();
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('status-selector')) {
+        const orderId = e.target.dataset.orderId;
+        const newStatus = e.target.value;
+        
+        fetch(`/api/sales/${orderId}/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (!result.success) alert('Error updating status');
+            loadSalesHistory();
+        });
+    }
+});
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadSalesHistory);
+</script>
+{% endblock %}

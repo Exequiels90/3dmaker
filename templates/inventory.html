@@ -1,0 +1,488 @@
+{% extends "layout.html" %}
+
+{% block title %}Inventory - 3D Workshop Management{% endblock %}
+
+{% block page_title %}Inventory & Catalog Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Products Section -->
+    <div class="col-lg-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-boxes mr-2"></i> Product Catalog
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- New Product Form -->
+                <div class="mb-3">
+                    <button class="btn btn-success" id="toggleNewProductForm">
+                        <i class="fas fa-plus mr-2"></i> Add New Product
+                    </button>
+                </div>
+                
+                <div id="newProductForm" class="card card-secondary mb-3" style="display:none;">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Product Name *</label>
+                                    <input type="text" id="productName" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Slicer Weight (grams) *</label>
+                                    <input type="number" id="productWeight" class="form-control" min="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Print Time (hours) *</label>
+                                    <input type="number" id="productPrintTime" class="form-control" min="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Post-Process Time (hours)</label>
+                                    <input type="number" id="productPostTime" class="form-control" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Material</label>
+                                    <select id="productMaterial" class="form-select">
+                                        <option value="">-- Select --</option>
+                                        {% for material in materials %}
+                                        <option value="{{ material.id }}">{{ material.brand }} {{ material.type }} {{ material.color }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Printer</label>
+                                    <select id="productPrinter" class="form-select">
+                                        <option value="">-- Select --</option>
+                                        <!-- Will be populated by JS -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Additional Costs ($)</label>
+                                    <input type="number" id="productAdditional" class="form-control" min="0" step="0.01" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group" style="margin-top: 1.5rem;">
+                                    <button type="button" class="btn btn-primary btn-block" id="saveProductBtn">Save Product</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Products Table -->
+                <table id="productsTable" class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Weight (g)</th>
+                            <th>Print Time</th>
+                            <th>Material</th>
+                            <th>Production Cost</th>
+                            <th>Suggested Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filament Inventory Section -->
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cube mr-2"></i> Filament Inventory
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <!-- New Material Form -->
+                <div class="mb-3">
+                    <button class="btn btn-info" id="toggleNewMaterialForm">
+                        <i class="fas fa-plus mr-2"></i> Add Material
+                    </button>
+                </div>
+                
+                <div id="newMaterialForm" class="card card-secondary mb-3" style="display:none;">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Brand *</label>
+                                    <input type="text" id="matBrand" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Type (PLA/ABS/etc) *</label>
+                                    <input type="text" id="matType" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Color *</label>
+                                    <input type="text" id="matColor" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Total Weight (g) *</label>
+                                    <input type="number" id="matTotalWeight" class="form-control" min="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Current Weight (g)</label>
+                                    <input type="number" id="matCurrentWeight" class="form-control" min="0" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group" style="margin-top: 1.5rem;">
+                                    <button type="button" class="btn btn-info btn-block" id="saveMaterialBtn">Save Material</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Purchase Cost ($) *</label>
+                                    <input type="number" id="matPurchaseCost" class="form-control" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Supplier</label>
+                                    <select id="matSupplier" class="form-select">
+                                        <option value="">-- Select --</option>
+                                        <!-- Will be populated by JS -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Materials Table -->
+                <table id="materialsTable" class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Material</th>
+                            <th>Current Weight</th>
+                            <th>Total Weight</th>
+                            <th>% Remaining</th>
+                            <th>Stock Status</th>
+                            <th>Cost/gram</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cost Breakdown Modal -->
+<div class="modal fade" id="costModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="costModalTitle">Cost Breakdown</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm table-bordered" id="costTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Component</th>
+                            <th>Amount ($)</th>
+                            <th>% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle forms
+document.getElementById('toggleNewProductForm').addEventListener('click', function() {
+    const form = document.getElementById('newProductForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('toggleNewMaterialForm').addEventListener('click', function() {
+    const form = document.getElementById('newMaterialForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+// Save Product
+document.getElementById('saveProductBtn').addEventListener('click', async function() {
+    const productData = {
+        name: document.getElementById('productName').value,
+        slicer_weight: parseFloat(document.getElementById('productWeight').value),
+        print_time_hours: parseFloat(document.getElementById('productPrintTime').value),
+        post_process_hours: parseFloat(document.getElementById('productPostTime').value),
+        material_id: document.getElementById('productMaterial').value || null,
+        printer_id: document.getElementById('productPrinter').value || null,
+        additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0
+    };
+    
+    if (!productData.name || !productData.slicer_weight || !productData.print_time_hours) {
+        alert('Please fill in required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/products/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+        
+        if (response.ok) {
+            alert('Product created successfully');
+            document.getElementById('newProductForm').style.display = 'none';
+            document.getElementById('productName').value = '';
+            loadProducts();
+        } else {
+            alert('Error creating product');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Save Material
+document.getElementById('saveMaterialBtn').addEventListener('click', async function() {
+    const totalWeight = parseFloat(document.getElementById('matTotalWeight').value);
+    const currentWeight = parseFloat(document.getElementById('matCurrentWeight').value) || totalWeight;
+    
+    const materialData = {
+        brand: document.getElementById('matBrand').value,
+        type: document.getElementById('matType').value,
+        color: document.getElementById('matColor').value,
+        total_weight: totalWeight,
+        current_weight: currentWeight,
+        purchase_cost: parseFloat(document.getElementById('matPurchaseCost').value),
+        supplier_id: document.getElementById('matSupplier').value || null
+    };
+    
+    if (!materialData.brand || !materialData.type || !materialData.color || !materialData.total_weight || !materialData.purchase_cost) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/materials/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(materialData)
+        });
+        
+        if (response.ok) {
+            alert('Material added successfully');
+            document.getElementById('newMaterialForm').style.display = 'none';
+            document.getElementById('matBrand').value = '';
+            loadMaterials();
+        } else {
+            alert('Error adding material');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Load products
+function loadProducts() {
+    fetch('/api/products')
+        .then(r => r.json())
+        .then(products => {
+            const tbody = document.getElementById('productsBody');
+            tbody.innerHTML = '';
+            products.forEach(product => {
+                const row = `
+                    <tr>
+                        <td>${product.name}</td>
+                        <td>${product.slicer_weight}g</td>
+                        <td>${product.print_time.toFixed(2)}h</td>
+                        <td>${product.material || '--'}</td>
+                        <td>$${product.production_cost.toFixed(2)}</td>
+                        <td><strong>$${product.suggested_price.toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="showCostBreakdown(${product.id}, '${product.name}')">
+                                <i class="fas fa-chart-pie"></i> Breakdown
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        });
+}
+
+// Load materials
+function loadMaterials() {
+    fetch('/api/materials')
+        .then(r => r.json())
+        .then(materials => {
+            const tbody = document.getElementById('materialsBody');
+            tbody.innerHTML = '';
+            materials.forEach(material => {
+                const statusBadge = material.status === 'critical' ? 
+                    '<span class="badge bg-danger">Critical</span>' :
+                    material.status === 'low' ? 
+                    '<span class="badge bg-warning">Low</span>' :
+                    '<span class="badge bg-success">OK</span>';
+                
+                const progressClass = material.status === 'critical' ? 'bg-danger' : 
+                                     material.status === 'low' ? 'bg-warning' : 'bg-success';
+                
+                const row = `
+                    <tr>
+                        <td>${material.brand} ${material.type} <strong>${material.color}</strong></td>
+                        <td>${material.current_weight.toFixed(1)}g</td>
+                        <td>${material.total_weight.toFixed(1)}g</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${progressClass}" style="width: ${material.remaining_percent}%;">
+                                    ${material.remaining_percent.toFixed(0)}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>$${material.cost_per_gram.toFixed(4)}/g</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="logWaste(${material.id})">
+                                <i class="fas fa-trash"></i> Log Waste
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        });
+}
+
+// Show cost breakdown
+async function showCostBreakdown(productId, productName) {
+    try {
+        const response = await fetch(`/api/chart/cost-breakdown/${productId}`);
+        const data = await response.json();
+        
+        document.getElementById('costModalTitle').textContent = `Cost Breakdown: ${productName}`;
+        
+        let tableHtml = '';
+        data.labels.forEach((label, i) => {
+            tableHtml += `
+                <tr>
+                    <td>${label}</td>
+                    <td>$${data.data[i].toFixed(2)}</td>
+                    <td>${data.percentages[i].toFixed(1)}%</td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += `
+            <tr class="table-light fw-bold">
+                <td>Total Production Cost</td>
+                <td>$${data.total.toFixed(2)}</td>
+                <td>100%</td>
+            </tr>
+        `;
+        
+        document.getElementById('costTableBody').innerHTML = tableHtml;
+        
+        const modal = new bootstrap.Modal(document.getElementById('costModal'));
+        modal.show();
+    } catch (err) {
+        alert('Error loading cost breakdown: ' + err.message);
+    }
+}
+
+// Log waste
+function logWaste(materialId) {
+    const grams = prompt('Grams of filament wasted:');
+    if (!grams) return;
+    
+    const reason = prompt('Reason for waste (e.g., "Stringing", "Poor adhesion"):');
+    if (!reason) return;
+    
+    fetch('/api/waste/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            material_id: materialId,
+            weight_wasted: parseFloat(grams),
+            reason: reason
+        })
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            alert(`Waste logged!\nCost Impact: $${result.cost_impact.toFixed(2)}\nRemaining: ${result.remaining_weight.toFixed(1)}g`);
+            loadMaterials();
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+
+// Load data on page init
+document.addEventListener('DOMContentLoaded', function() {
+    loadProducts();
+    loadMaterials();
+});
+</script>
+
+<style>
+.progress {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
