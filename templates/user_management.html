@@ -1,0 +1,186 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ _('Gestión de Usuarios') }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ _('Gestión de Usuarios') }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Inicio') }}</a></li>
+                        <li class="breadcrumb-item active">Usuarios</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">{{ _('Lista de Usuarios') }}</h3>
+                            <button class="btn btn-primary float-right" onclick="showAddUserModal()">
+                                <i class="fas fa-plus"></i> {{ _('Nuevo Usuario') }}
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table id="usersTable" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>{{ _('ID') }}</th>
+                                        <th>{{ _('Usuario') }}</th>
+                                        <th>{{ _('Rol') }}</th>
+                                        <th>{{ _('Primer Login') }}</th>
+                                        <th>{{ _('Creado') }}</th>
+                                        <th>{{ _('Acciones') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td>{{ user.username }}</td>
+                                        <td>
+                                            <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-info{% endif %}">
+                                                {{ user.role }}
+                                            </span>
+                                        </td>
+                                        <td>{{ 'Sí' if user.is_first_login else 'No' }}</td>
+                                        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" onclick="editUser({{ user.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalTitle">Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label>Usuario</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="password" class="form-control">
+                        <small class="text-muted">Dejar vacío para mantener la contraseña actual al editar</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select id="role" class="form-control">
+                            <option value="vendedor">Vendedor</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#usersTable').DataTable();
+});
+
+function showAddUserModal() {
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = '';
+    document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('password').required = true;
+    new bootstrap.Modal(document.getElementById('userModal')).show();
+}
+
+function editUser(userId) {
+    fetch(`/api/users/${userId}`)
+        .then(r => r.json())
+        .then(user => {
+            document.getElementById('userId').value = user.id;
+            document.getElementById('username').value = user.username;
+            document.getElementById('password').value = '';
+            document.getElementById('password').required = false;
+            document.getElementById('role').value = user.role;
+            document.getElementById('userModalTitle').textContent = 'Editar Usuario';
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        });
+}
+
+function saveUser() {
+    const userId = document.getElementById('userId').value;
+    const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value
+    };
+    
+    const url = userId ? `/api/users/${userId}` : '/api/users/create';
+    const method = userId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Usuario guardado exitosamente');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function deleteUser(userId) {
+    if (confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) {
+        fetch(`/api/users/${userId}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Usuario eliminado exitosamente');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+    }
+}
+</script>
+{% endblock %}

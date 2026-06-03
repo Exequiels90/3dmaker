@@ -366,3 +366,67 @@ Ganancia Real del Mes =
 | `templates/expenses.html` | Nueva vista completa |
 | `templates/layout.html` | Agregar ítem "Expenses" al menú lateral |
 | `templates/dashboard.html` | Actualizar KPI de ganancia + nuevo dato de egresos |
+
+---
+
+## 🚀 Puntos Futuros (Mejoras Planificadas)
+
+### Sistema de Órdenes de Clientes + Integración WhatsApp API
+
+**Objetivo:** Permitir que los clientes accedan al catálogo estático y generen órdenes de compra directamente, con seguimiento vía WhatsApp.
+
+**Funcionalidades Planificadas:**
+
+1. **Nuevo Menú para Clientes:**
+   - Vista pública del catálogo de productos (basada en `/catalogo/export`)
+   - Formulario para crear órdenes de clientes
+   - Sistema de IDs incrementales para órdenes de clientes (separado de órdenes internas)
+   - Selección de productos, cantidades y datos de contacto
+
+2. **Integración con WhatsApp API:**
+   - Al crear una orden de cliente, enviar notificación automática al administrador vía WhatsApp
+   - El cliente recibe confirmación de su orden con detalles
+   - Sistema de seguimiento de estado de la orden vía WhatsApp
+   - Notificaciones automáticas en cambios de estado (En Producción → Listo → Enviado)
+
+3. **Modelo de Datos Propuesto:**
+   - Nueva tabla `CustomerOrder` (separada de `Order` interna):
+     - `id` (Integer, PK, auto-incremental)
+     - `customer_name` (String)
+     - `customer_phone` (String) - para WhatsApp
+     - `customer_email` (String, opcional)
+     - `items` (JSON o tabla de asociación)
+     - `total_amount` (Float)
+     - `status` (String: 'Pendiente', 'En Producción', 'Listo', 'Enviado', 'Entregado')
+     - `created_at` (DateTime)
+     - `whatsapp_message_id` (String, opcional) - para seguimiento de mensajes
+
+4. **Endpoints Propuestos:**
+   - GET `/catalogo` - Vista pública del catálogo
+   - POST `/api/customer-orders/create` - Crear orden de cliente
+   - GET `/api/customer-orders/<id>` - Ver estado de orden
+   - POST `/api/customer-orders/<id>/update-status` - Actualizar estado (con notificación WhatsApp)
+
+5. **Requisitos de WhatsApp API:**
+   - Configuración de API Key de WhatsApp Business API
+   - Webhook para recibir mensajes de clientes
+   - Sistema de plantillas de mensajes para notificaciones
+   - Manejo de respuestas automáticas
+
+**Prioridad:** Baja/Media - Implementar después de que todas las funcionalidades actuales funcionen correctamente.
+
+---
+
+## ✅ Estado de Implementación
+
+### Completado:
+- ✅ Traducción de toda la interfaz a español
+- ✅ Corrección de Bug 1: Descuento de stock al crear orden (con logs de debug)
+- ✅ Feature 1: Soporte Multi-Material (tabla ProductMaterial + frontend)
+- ✅ Feature 2: Campo URL de imagen por producto
+- ✅ Sección 7: Módulo de Egresos/Gastos (tabla Expense + endpoints + vista)
+- ✅ Feature 3: Catálogo estático exportable (endpoint `/catalogo/export`)
+
+### Pendiente:
+- ⏳ Sistema de Login (último)
+- ⏳ Sistema de Órdenes de Clientes + WhatsApp API (futuro)

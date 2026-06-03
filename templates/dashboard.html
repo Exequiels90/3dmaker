@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
-{% block title %}Dashboard - 3D Printing Workshop{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+{% block title %}{{ _('Panel Principal - Taller de Impresión 3D') }}{% endblock %}
+{% block page_title %}{{ _('Panel Principal') }}{% endblock %}
 
 {% block content %}
 <!-- KPIs Row -->
@@ -11,13 +11,29 @@
         <div class="small-box bg-info">
             <div class="inner">
                 <h3>${{ '%.2f'|format(monthly_revenue) }}</h3>
-                <p>Monthly Revenue</p>
+                <p>{{ _('Ingresos Mensuales') }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-dollar-sign"></i>
             </div>
             <a href="{{ url_for('main.sales') }}" class="small-box-footer">
-                More info <i class="fas fa-arrow-circle-right"></i>
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Monthly Expenses -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>${{ '%.2f'|format(monthly_expenses) }}</h3>
+                <p>{{ _('Egresos del Mes') }}</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <a href="{{ url_for('main.config_page') }}" class="small-box-footer">
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
@@ -27,13 +43,13 @@
         <div class="small-box bg-success">
             <div class="inner">
                 <h3>${{ '%.2f'|format(monthly_profit) }}</h3>
-                <p>Net Profit (This Month)</p>
+                <p>{{ _('Ganancia Real (Ingresos - Gastos)') }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-chart-pie"></i>
             </div>
             <a href="{{ url_for('main.sales') }}" class="small-box-footer">
-                More info <i class="fas fa-arrow-circle-right"></i>
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
@@ -43,13 +59,13 @@
         <div class="small-box bg-warning">
             <div class="inner">
                 <h3>{{ '%.1f'|format(total_filament_kg) }}<sup style="font-size:20px">kg</sup></h3>
-                <p>Total Filament in Stock</p>
+                <p>{{ _('Total Filamento en Stock') }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-boxes"></i>
             </div>
             <a href="{{ url_for('main.inventory') }}" class="small-box-footer">
-                More info <i class="fas fa-arrow-circle-right"></i>
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
@@ -59,19 +75,48 @@
         <div class="small-box bg-danger">
             <div class="inner">
                 <h3>{{ total_alerts }}</h3>
-                <p>Active Alerts</p>
+                <p>{{ _('Alertas Activas') }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
             <a href="{{ url_for('main.inventory') }}" class="small-box-footer">
-                {% if low_stock_count > 0 %}{{ low_stock_count }} low stock {% endif %}
-                {% if maintenance_count > 0 %}{{ maintenance_count }} maintenance needed{% endif %}
+                {% if low_stock_count > 0 %}{{ low_stock_count }} {{ _('stock bajo') }} {% endif %}
+                {% if maintenance_count > 0 %}{{ maintenance_count }} {{ _('mantenimiento necesario') }}{% endif %}
                 <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
 </div>
+
+<!-- Low Stock Alerts Row -->
+{% if low_stock_materials %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-exclamation-triangle"></i> Alertas de Stock Bajo
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for material in low_stock_materials %}
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <strong>{{ material.brand }} {{ material.color }}</strong><br>
+                            <small>Stock: {{ material.current_weight }}g ({{ '%.1f'|format(material.remaining_percent) }}%)</small>
+                            <br>
+                            <a href="{{ url_for('main.inventory') }}" class="btn btn-sm btn-warning mt-2">Reponer</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Charts Row -->
 <div class="row">
@@ -79,7 +124,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header border-0">
-                <h3 class="card-title">Revenue vs Costs (Last 12 Months)</h3>
+                <h3 class="card-title">Ingresos vs Costos (Últimos 12 Meses)</h3>
             </div>
             <div class="card-body">
                 <canvas id="revenueVsCostsChart" style="height: 300px;"></canvas>
@@ -87,12 +132,26 @@
         </div>
     </div>
     
-    <!-- Waste Trends Chart -->
+    <!-- Product Sales Chart -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Productos Más Vendidos (Últimos 12 Meses)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="productSalesChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Waste Trends Chart Row -->
+<div class="row">
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-chart-line mr-2"></i> Waste Trends
+                    <i class="fas fa-chart-line mr-2"></i> Tendencias de Desperdicio
                 </h3>
             </div>
             <div class="card-body">
@@ -108,15 +167,15 @@
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-chart-pie mr-2"></i> Cost Breakdown by Product
+                    <i class="fas fa-chart-pie mr-2"></i> Desglose de Costos por Producto
                 </h3>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label for="productSelector" class="form-label">Select Product:</label>
+                        <label for="productSelector" class="form-label">Seleccionar Producto:</label>
                         <select id="productSelector" class="form-select">
-                            <option value="">-- Choose a product --</option>
+                            <option value="">-- Elegir un producto --</option>
                         </select>
                     </div>
                 </div>
@@ -138,6 +197,7 @@
 // Initialize charts when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadRevenueVsCostsChart();
+    loadProductSalesChart();
     loadWasteTrendsChart();
     loadProductSelector();
 });
@@ -146,13 +206,19 @@ document.addEventListener('DOMContentLoaded', function() {
 let chartRevenueVsCosts = null;
 let chartWasteTrends = null;
 let chartCostBreakdown = null;
+let chartProductSales = null;
 
 // Load Revenue vs Costs Chart
 function loadRevenueVsCostsChart() {
     fetch('/api/chart/revenue-vs-costs')
         .then(r => r.json())
         .then(data => {
-            const ctx = document.getElementById('chartRevenueVsCosts').getContext('2d');
+            const canvas = document.getElementById('chartRevenueVsCosts');
+            if (!canvas) {
+                console.error('Canvas element not found: chartRevenueVsCosts');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             if (chartRevenueVsCosts) chartRevenueVsCosts.destroy();
             chartRevenueVsCosts = new Chart(ctx, {
                 type: 'bar',
@@ -160,14 +226,14 @@ function loadRevenueVsCostsChart() {
                     labels: data.labels,
                     datasets: [
                         {
-                            label: 'Revenue ($)',
+                            label: 'Ingresos ($)',
                             data: data.datasets[0].data,
                             backgroundColor: '#28a745',
                             borderColor: '#1e7e34',
                             borderWidth: 1
                         },
                         {
-                            label: 'Costs ($)',
+                            label: 'Costos ($)',
                             data: data.datasets[1].data,
                             backgroundColor: '#dc3545',
                             borderColor: '#a71d2a',
@@ -184,7 +250,7 @@ function loadRevenueVsCostsChart() {
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Amount ($)' }
+                            title: { display: true, text: 'Monto ($)' }
                         }
                     }
                 }
@@ -193,12 +259,59 @@ function loadRevenueVsCostsChart() {
         .catch(err => console.error('Error loading chart:', err));
 }
 
+// Load Product Sales Chart
+function loadProductSalesChart() {
+    fetch('/api/chart/product-sales')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('productSalesChart');
+            if (!canvas) {
+                console.error('Canvas element not found: productSalesChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartProductSales) chartProductSales.destroy();
+            chartProductSales = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Cantidad Vendida',
+                        data: data.quantities,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Cantidad' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading product sales chart:', err));
+}
+
 // Load Waste Trends Chart
 function loadWasteTrendsChart() {
     fetch('/api/chart/waste-trends')
         .then(r => r.json())
         .then(data => {
-            const ctx = document.getElementById('chartWasteTrends').getContext('2d');
+            const canvas = document.getElementById('chartWasteTrends');
+            if (!canvas) {
+                console.error('Canvas element not found: chartWasteTrends');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             if (chartWasteTrends) chartWasteTrends.destroy();
             chartWasteTrends = new Chart(ctx, {
                 type: 'line',
@@ -215,7 +328,7 @@ function loadWasteTrendsChart() {
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Waste (grams)' }
+                            title: { display: true, text: 'Desperdicio (gramos)' }
                         }
                     }
                 }
@@ -253,7 +366,12 @@ function loadCostBreakdown(productId) {
         .then(r => r.json())
         .then(data => {
             // Pie Chart
-            const ctx = document.getElementById('chartCostBreakdown').getContext('2d');
+            const canvas = document.getElementById('chartCostBreakdown');
+            if (!canvas) {
+                console.error('Canvas element not found: chartCostBreakdown');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             if (chartCostBreakdown) chartCostBreakdown.destroy();
             chartCostBreakdown = new Chart(ctx, {
                 type: 'doughnut',
@@ -280,9 +398,9 @@ function loadCostBreakdown(productId) {
                 <table class="table table-sm table-bordered">
                     <thead class="table-light">
                         <tr>
-                            <th>Component</th>
-                            <th>Amount ($)</th>
-                            <th>% of Total</th>
+                            <th>Componente</th>
+                            <th>Monto ($)</th>
+                            <th>% del Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -294,7 +412,7 @@ function loadCostBreakdown(productId) {
                             </tr>
                         `).join('')}
                         <tr class="fw-bold">
-                            <td>Total Production Cost</td>
+                            <td>Costo Total de Producción</td>
                             <td>$${data.total.toFixed(2)}</td>
                             <td>100%</td>
                         </tr>

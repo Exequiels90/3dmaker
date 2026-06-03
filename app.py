@@ -1,8 +1,19 @@
-from flask import Flask
-from models import db, GlobalConfig
+from flask import Flask, session, request, g
+from flask_login import LoginManager
+from flask_babel import Babel, gettext
+from models import db, GlobalConfig, User
 from routes import main as main_blueprint
 import os
 import time
+
+
+def get_locale():
+    """Obtener el idioma preferido del usuario"""
+    # 1. Verificar si el usuario seleccionó un idioma en la sesión
+    if 'language' in session:
+        return session['language']
+    # 2. Verificar el idioma del navegador
+    return request.accept_languages.best_match(['es', 'en']) or 'es'
 
 
 def create_app(database_path=None):
@@ -23,6 +34,37 @@ def create_app(database_path=None):
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = 'dev-secret-key-change-in-production'
+    
+    # Configurar Flask-Babel
+    app.config['BABEL_DEFAULT_LOCALE'] = 'es'
+    app.config['BABEL_SUPPORTED_LOCALES'] = ['es', 'en']
+    app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
+    babel = Babel(app)
+    babel.init_app(app, locale_selector=get_locale)
+    
+    # Agregar función de traducción al contexto global
+    @app.context_processor
+    def inject_babel():
+        return dict(_=gettext)
+
+    # Agregar configuración global al contexto
+    @app.context_processor
+    def inject_config():
+        try:
+            config = GlobalConfig.get_singleton()
+            return dict(config=config)
+        except:
+            return dict(config=None)
+
+    # Configure Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'main.login'
+    login_manager.login_message = 'Por favor inicia sesión para acceder.'
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(User, int(user_id))
 
     db.init_app(app)
     app.register_blueprint(main_blueprint)

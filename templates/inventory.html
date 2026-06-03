@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 
-{% block title %}Inventory - 3D Workshop Management{% endblock %}
+{% block title %}{{ _('Inventario - Gestión de Taller 3D') }}{% endblock %}
 
-{% block page_title %}Inventory & Catalog Management{% endblock %}
+{% block page_title %}{{ _('Gestión de Inventario y Catálogo') }}{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -11,7 +11,7 @@
         <div class="card card-primary">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-boxes mr-2"></i> Product Catalog
+                    <i class="fas fa-boxes mr-2"></i> {{ _('Catálogo de Productos') }}
                 </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -24,8 +24,11 @@
                 <!-- New Product Form -->
                 <div class="mb-3">
                     <button class="btn btn-success" id="toggleNewProductForm">
-                        <i class="fas fa-plus mr-2"></i> Add New Product
+                        <i class="fas fa-plus mr-2"></i> {{ _('Agregar Nuevo Producto') }}
                     </button>
+                    <a href="/catalogo/export" class="btn btn-info" target="_blank">
+                        <i class="fas fa-download mr-2"></i> {{ _('Exportar Catálogo') }}
+                    </a>
                 </div>
                 
                 <div id="newProductForm" class="card card-secondary mb-3" style="display:none;">
@@ -33,26 +36,34 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Product Name *</label>
+                                    <label>{{ _('Nombre del Producto *') }}</label>
                                     <input type="text" id="productName" class="form-control" required>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Slicer Weight (grams) *</label>
+                                    <label>{{ _('Categoría') }}</label>
+                                    <select id="productCategory" class="form-control">
+                                        <!-- Las categorías se cargarán dinámicamente aquí -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Descripción (para catálogo)') }}</label>
+                                    <input type="text" id="productDescription" class="form-control" placeholder="Descripción breve del producto">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Precio Minorista ($)') }}</label>
+                                    <input type="number" id="productRetailPrice" class="form-control" min="0" step="0.01" placeholder="{{ _('0 = precio sugerido') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Peso Laminado (gramos) *') }}</label>
                                     <input type="number" id="productWeight" class="form-control" min="0" step="0.1" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>Print Time (hours) *</label>
-                                    <input type="number" id="productPrintTime" class="form-control" min="0" step="0.1" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>Post-Process Time (hours)</label>
-                                    <input type="number" id="productPostTime" class="form-control" min="0" step="0.1" value="0">
                                 </div>
                             </div>
                         </div>
@@ -60,9 +71,20 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Material</label>
+                                    <label>{{ _('Tiempo de Impresión (horas) *') }}</label>
+                                    <input type="number" id="productPrintTime" class="form-control" min="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Tiempo de Post-Procesado (horas)') }}</label>
+                                    <input type="number" id="productPostTime" class="form-control" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                                <div class="form-group">
+                                    <label>{{ _('Material (Opcional - ver abajo para multi-material)') }}</label>
                                     <select id="productMaterial" class="form-select">
-                                        <option value="">-- Select --</option>
+                                        <option value="">{{ _('-- Seleccionar --') }}</option>
                                         {% for material in materials %}
                                         <option value="{{ material.id }}">{{ material.brand }} {{ material.type }} {{ material.color }}</option>
                                         {% endfor %}
@@ -71,22 +93,106 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Printer</label>
+                                    <label>{{ _('Impresora') }}</label>
                                     <select id="productPrinter" class="form-select">
-                                        <option value="">-- Select --</option>
+                                        <option value="">-- Seleccionar --</option>
                                         <!-- Will be populated by JS -->
                                     </select>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Additional Costs ($)</label>
+                                    <label>{{ _('Costos Adicionales ($)') }}</label>
                                     <input type="number" id="productAdditional" class="form-control" min="0" step="0.01" value="0">
                                 </div>
                             </div>
                             <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('URL de Imagen') }}</label>
+                                    <input type="text" id="productImageUrl" class="form-control" placeholder="https://...">
+                                    <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="addImage()">
+                                        <i class="fas fa-plus"></i> {{ _('Agregar') }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Habilitar Descuentos por Cantidad') }}</label>
+                                    <select id="productEnableDiscounts" class="form-control">
+                                        <option value="true">{{ _('Sí') }}</option>
+                                        <option value="false">{{ _('No') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Umbral Descuento 10%') }}</label>
+                                    <input type="number" id="productDiscountThreshold5" class="form-control" min="1" value="5">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Umbral Descuento 15%') }}</label>
+                                    <input type="number" id="productDiscountThreshold10" class="form-control" min="1" value="10">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('Umbral Descuento 20%') }}</label>
+                                    <input type="number" id="productDiscountThreshold25" class="form-control" min="1" value="25">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="imagesRow" style="display: none;">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">{{ _('Imágenes del Producto') }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="imagesList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Multi-Material Section -->
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="card card-light">
+                                    <div class="card-header">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-layer-group mr-2"></i> Materiales Múltiples (Opcional)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm" id="multiMaterialTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Material</th>
+                                                    <th>Gramos</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="multiMaterialBody">
+                                            </tbody>
+                                        </table>
+                                        <button type="button" class="btn btn-sm btn-info mt-2" id="addMaterialRowBtn">
+                                            <i class="fas fa-plus"></i> Agregar Material
+                                        </button>
+                                        <div class="mt-2">
+                                            <strong>Total Gramos: </strong><span id="totalGrams">0</span>g
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-3">
                                 <div class="form-group" style="margin-top: 1.5rem;">
-                                    <button type="button" class="btn btn-primary btn-block" id="saveProductBtn">Save Product</button>
+                                    <button type="button" class="btn btn-primary btn-block" id="saveProductBtn">Guardar Producto</button>
                                 </div>
                             </div>
                         </div>
@@ -97,13 +203,14 @@
                 <table id="productsTable" class="table table-striped table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th>Product Name</th>
-                            <th>Weight (g)</th>
-                            <th>Print Time</th>
+                            <th>Nombre del Producto</th>
+                            <th>Imagen</th>
+                            <th>Peso (g)</th>
+                            <th>Tiempo de Impresión</th>
                             <th>Material</th>
-                            <th>Production Cost</th>
-                            <th>Suggested Price</th>
-                            <th>Actions</th>
+                            <th>Costo de Producción</th>
+                            <th>Precio Sugerido</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="productsBody">
@@ -120,7 +227,7 @@
         <div class="card card-info">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-cube mr-2"></i> Filament Inventory
+                    <i class="fas fa-cube mr-2"></i> Inventario de Filamento
                 </h3>
             </div>
             
@@ -128,7 +235,7 @@
                 <!-- New Material Form -->
                 <div class="mb-3">
                     <button class="btn btn-info" id="toggleNewMaterialForm">
-                        <i class="fas fa-plus mr-2"></i> Add Material
+                        <i class="fas fa-plus mr-2"></i> Agregar Material
                     </button>
                 </div>
                 
@@ -137,13 +244,13 @@
                         <div class="row">
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>Brand *</label>
+                                    <label>Marca *</label>
                                     <input type="text" id="matBrand" class="form-control" required>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>Type (PLA/ABS/etc) *</label>
+                                    <label>Tipo (PLA/ABS/etc) *</label>
                                     <input type="text" id="matType" class="form-control" required>
                                 </div>
                             </div>
@@ -155,19 +262,19 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>Total Weight (g) *</label>
+                                    <label>Peso Total (g) *</label>
                                     <input type="number" id="matTotalWeight" class="form-control" min="0" step="0.1" required>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>Current Weight (g)</label>
+                                    <label>Peso Actual (g)</label>
                                     <input type="number" id="matCurrentWeight" class="form-control" min="0" step="0.1">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group" style="margin-top: 1.5rem;">
-                                    <button type="button" class="btn btn-info btn-block" id="saveMaterialBtn">Save Material</button>
+                                    <button type="button" class="btn btn-info btn-block" id="saveMaterialBtn">Guardar Material</button>
                                 </div>
                             </div>
                         </div>
@@ -175,13 +282,13 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Purchase Cost ($) *</label>
+                                    <label>Costo de Compra ($) *</label>
                                     <input type="number" id="matPurchaseCost" class="form-control" min="0" step="0.01" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Supplier</label>
+                                    <label>Proveedor</label>
                                     <select id="matSupplier" class="form-select">
                                         <option value="">-- Select --</option>
                                         <!-- Will be populated by JS -->
@@ -197,12 +304,12 @@
                     <thead class="table-light">
                         <tr>
                             <th>Material</th>
-                            <th>Current Weight</th>
-                            <th>Total Weight</th>
-                            <th>% Remaining</th>
-                            <th>Stock Status</th>
-                            <th>Cost/gram</th>
-                            <th>Actions</th>
+                            <th>Peso Actual</th>
+                            <th>Peso Total</th>
+                            <th>% Restante</th>
+                            <th>Estado de Stock</th>
+                            <th>Costo/gramo</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="materialsBody">
@@ -218,16 +325,16 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="costModalTitle">Cost Breakdown</h5>
+                <h5 class="modal-title" id="costModalTitle">Desglose de Costos</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <table class="table table-sm table-bordered" id="costTable">
                     <thead class="table-light">
                         <tr>
-                            <th>Component</th>
-                            <th>Amount ($)</th>
-                            <th>% of Total</th>
+                            <th>Componente</th>
+                            <th>Monto ($)</th>
+                            <th>% del Total</th>
                         </tr>
                     </thead>
                     <tbody id="costTableBody">
@@ -250,20 +357,141 @@ document.getElementById('toggleNewMaterialForm').addEventListener('click', funct
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
 });
 
+// Multi-Material handling
+document.getElementById('addMaterialRowBtn').addEventListener('click', function() {
+    const tbody = document.getElementById('multiMaterialBody');
+    const row = document.createElement('tr');
+    row.className = 'material-row';
+    row.innerHTML = `
+        <td>
+            <select class="form-select form-select-sm material-select">
+                <option value="">-- Seleccionar --</option>
+                {% for material in materials %}
+                <option value="{{ material.id }}">{{ material.brand }} {{ material.type }} {{ material.color }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm material-weight" min="0" step="0.1" value="0">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger remove-material-row">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-material-row')) {
+        const row = e.target.closest('.material-row');
+        row.remove();
+        updateTotalGrams();
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('material-weight')) {
+        updateTotalGrams();
+    }
+});
+
+function updateTotalGrams() {
+    const weights = document.querySelectorAll('.material-weight');
+    let total = 0;
+    weights.forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('totalGrams').textContent = total.toFixed(1);
+}
+
+// Image management
+let productImages = [];
+
+function addImage() {
+    const imageUrl = document.getElementById('productImageUrl').value.trim();
+    if (!imageUrl) {
+        alert('Por favor ingresa una URL de imagen');
+        return;
+    }
+    
+    productImages.push(imageUrl);
+    document.getElementById('productImageUrl').value = '';
+    renderImagesList();
+    
+    document.getElementById('imagesRow').style.display = 'block';
+}
+
+function renderImagesList() {
+    const list = document.getElementById('imagesList');
+    list.innerHTML = '';
+    
+    productImages.forEach((url, index) => {
+        const div = document.createElement('div');
+        div.className = 'd-flex align-items-center mb-2';
+        div.innerHTML = `
+            <img src="${url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; margin-right: 10px; max-width: 80px;">
+            <input type="text" class="form-control" value="${url}" onchange="updateImage(${index}, this.value)" style="flex: 1;">
+            <button type="button" class="btn btn-sm btn-danger ml-2" onclick="removeImage(${index})">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function updateImage(index, newUrl) {
+    productImages[index] = newUrl;
+}
+
+function removeImage(index) {
+    productImages.splice(index, 1);
+    renderImagesList();
+    
+    if (productImages.length === 0) {
+        document.getElementById('imagesRow').style.display = 'none';
+    }
+}
+
 // Save Product
 document.getElementById('saveProductBtn').addEventListener('click', async function() {
+    // Collect multi-material data
+    const materials = [];
+    const materialRows = document.querySelectorAll('.material-row');
+    materialRows.forEach(row => {
+        const materialId = row.querySelector('.material-select').value;
+        const weight = parseFloat(row.querySelector('.material-weight').value) || 0;
+        if (materialId && weight > 0) {
+            materials.push({
+                material_id: parseInt(materialId),
+                weight_grams: weight
+            });
+        }
+    });
+    
     const productData = {
         name: document.getElementById('productName').value,
+        category: document.getElementById('productCategory').value || 'General',
+        description: document.getElementById('productDescription').value || null,
+        retail_price: parseFloat(document.getElementById('productRetailPrice').value) || 0,
         slicer_weight: parseFloat(document.getElementById('productWeight').value),
         print_time_hours: parseFloat(document.getElementById('productPrintTime').value),
         post_process_hours: parseFloat(document.getElementById('productPostTime').value),
         material_id: document.getElementById('productMaterial').value || null,
         printer_id: document.getElementById('productPrinter').value || null,
-        additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0
+        additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
+        image_url: productImages.length > 0 ? productImages[0] : document.getElementById('productImageUrl').value || null,
+        images: productImages,
+        materials: materials,
+        enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
+        discount_threshold_5: parseInt(document.getElementById('productDiscountThreshold5').value) || 5,
+        discount_threshold_10: parseInt(document.getElementById('productDiscountThreshold10').value) || 10,
+        discount_threshold_25: parseInt(document.getElementById('productDiscountThreshold25').value) || 25
     };
     
     if (!productData.name || !productData.slicer_weight || !productData.print_time_hours) {
-        alert('Please fill in required fields');
+        alert('Por favor complete los campos requeridos');
         return;
     }
     
@@ -275,12 +503,26 @@ document.getElementById('saveProductBtn').addEventListener('click', async functi
         });
         
         if (response.ok) {
-            alert('Product created successfully');
+            alert('Producto creado exitosamente');
             document.getElementById('newProductForm').style.display = 'none';
             document.getElementById('productName').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productRetailPrice').value = '';
+            document.getElementById('productWeight').value = '';
+            document.getElementById('productPrintTime').value = '';
+            document.getElementById('productPostTime').value = '';
+            document.getElementById('productMaterial').value = '';
+            document.getElementById('productPrinter').value = '';
+            document.getElementById('productAdditional').value = '';
+            document.getElementById('productImageUrl').value = '';
+            document.getElementById('multiMaterialBody').innerHTML = '';
+            document.getElementById('totalGrams').textContent = '0';
+            productImages = [];
+            document.getElementById('imagesList').innerHTML = '';
+            document.getElementById('imagesRow').style.display = 'none';
             loadProducts();
         } else {
-            alert('Error creating product');
+            alert('Error al crear producto');
         }
     } catch (err) {
         alert('Error: ' + err.message);
@@ -303,7 +545,7 @@ document.getElementById('saveMaterialBtn').addEventListener('click', async funct
     };
     
     if (!materialData.brand || !materialData.type || !materialData.color || !materialData.total_weight || !materialData.purchase_cost) {
-        alert('Please fill in all required fields');
+        alert('Por favor complete todos los campos requeridos');
         return;
     }
     
@@ -315,17 +557,33 @@ document.getElementById('saveMaterialBtn').addEventListener('click', async funct
         });
         
         if (response.ok) {
-            alert('Material added successfully');
+            alert('Material agregado exitosamente');
             document.getElementById('newMaterialForm').style.display = 'none';
             document.getElementById('matBrand').value = '';
             loadMaterials();
         } else {
-            alert('Error adding material');
+            alert('Error al agregar material');
         }
     } catch (err) {
         alert('Error: ' + err.message);
     }
 });
+
+// Load categories
+function loadCategories() {
+    fetch('/api/categories')
+        .then(r => r.json())
+        .then(categories => {
+            const select = document.getElementById('productCategory');
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.name;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        });
+}
 
 // Load products
 function loadProducts() {
@@ -335,9 +593,14 @@ function loadProducts() {
             const tbody = document.getElementById('productsBody');
             tbody.innerHTML = '';
             products.forEach(product => {
+                const imageHtml = product.image_url ? 
+                    `<img src="${product.image_url}" style="height:40px; width:40px; object-fit:cover; border-radius:4px;" alt="${product.name}">` : 
+                    '<span class="text-muted">Sin imagen</span>';
+                
                 const row = `
                     <tr>
                         <td>${product.name}</td>
+                        <td>${imageHtml}</td>
                         <td>${product.slicer_weight}g</td>
                         <td>${product.print_time.toFixed(2)}h</td>
                         <td>${product.material || '--'}</td>
@@ -345,7 +608,13 @@ function loadProducts() {
                         <td><strong>$${product.suggested_price.toFixed(2)}</strong></td>
                         <td>
                             <button class="btn btn-sm btn-info" onclick="showCostBreakdown(${product.id}, '${product.name}')">
-                                <i class="fas fa-chart-pie"></i> Breakdown
+                                <i class="fas fa-chart-pie"></i> Desglose
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editProduct(${product.id})">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </td>
                     </tr>
@@ -353,6 +622,140 @@ function loadProducts() {
                 tbody.innerHTML += row;
             });
         });
+}
+
+// Edit Product
+function editProduct(productId) {
+    fetch(`/api/products`)
+        .then(r => r.json())
+        .then(products => {
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                alert('Producto no encontrado');
+                return;
+            }
+            
+            // Populate form with product data
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productCategory').value = product.category || 'General';
+            document.getElementById('productDescription').value = product.description || '';
+            document.getElementById('productRetailPrice').value = product.retail_price || 0;
+            document.getElementById('productWeight').value = product.slicer_weight;
+            document.getElementById('productPrintTime').value = product.print_time;
+            document.getElementById('productPostTime').value = product.postproc_time || 0;
+            document.getElementById('productMaterial').value = product.material_id || '';
+            document.getElementById('productPrinter').value = product.printer_id || '';
+            document.getElementById('productAdditional').value = product.additional_costs || 0;
+            document.getElementById('productImageUrl').value = product.image_url || '';
+            document.getElementById('productEnableDiscounts').value = product.enable_quantity_discounts ? 'true' : 'false';
+            document.getElementById('productDiscountThreshold5').value = product.discount_threshold_5 || 5;
+            document.getElementById('productDiscountThreshold10').value = product.discount_threshold_10 || 10;
+            document.getElementById('productDiscountThreshold25').value = product.discount_threshold_25 || 25;
+            
+            // Show form
+            document.getElementById('newProductForm').style.display = 'block';
+            
+            // Store product ID for update
+            document.getElementById('saveProductBtn').onclick = async function() {
+                await updateProduct(productId);
+            };
+        });
+}
+
+// Update Product
+async function updateProduct(productId) {
+    const materials = [];
+    const materialRows = document.querySelectorAll('.material-row');
+    materialRows.forEach(row => {
+        const materialId = row.querySelector('.material-select').value;
+        const weight = parseFloat(row.querySelector('.material-weight').value) || 0;
+        if (materialId && weight > 0) {
+            materials.push({ material_id: parseInt(materialId), weight_grams: weight });
+        }
+    });
+    
+    const productData = {
+        name: document.getElementById('productName').value,
+        category: document.getElementById('productCategory').value || 'General',
+        description: document.getElementById('productDescription').value || null,
+        retail_price: parseFloat(document.getElementById('productRetailPrice').value) || 0,
+        slicer_weight: parseFloat(document.getElementById('productWeight').value),
+        print_time_hours: parseFloat(document.getElementById('productPrintTime').value),
+        post_process_hours: parseFloat(document.getElementById('productPostTime').value),
+        material_id: document.getElementById('productMaterial').value || null,
+        printer_id: document.getElementById('productPrinter').value || null,
+        additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
+        image_url: productImages.length > 0 ? productImages[0] : document.getElementById('productImageUrl').value || null,
+        images: productImages,
+        materials: materials,
+        enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
+        discount_threshold_5: parseInt(document.getElementById('productDiscountThreshold5').value) || 5,
+        discount_threshold_10: parseInt(document.getElementById('productDiscountThreshold10').value) || 10,
+        discount_threshold_25: parseInt(document.getElementById('productDiscountThreshold25').value) || 25
+    };
+    
+    if (!productData.name || !productData.slicer_weight || !productData.print_time_hours) {
+        alert('Por favor complete los campos requeridos');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/products/${productId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+        
+        if (response.ok) {
+            alert('Producto actualizado exitosamente');
+            document.getElementById('newProductForm').style.display = 'none';
+            document.getElementById('productName').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productRetailPrice').value = '';
+            document.getElementById('productWeight').value = '';
+            document.getElementById('productPrintTime').value = '';
+            document.getElementById('productPostTime').value = '';
+            document.getElementById('productMaterial').value = '';
+            document.getElementById('productPrinter').value = '';
+            document.getElementById('productAdditional').value = '';
+            document.getElementById('productImageUrl').value = '';
+            document.getElementById('multiMaterialBody').innerHTML = '';
+            document.getElementById('totalGrams').textContent = '0';
+            productImages = [];
+            document.getElementById('imagesList').innerHTML = '';
+            document.getElementById('imagesRow').style.display = 'none';
+            
+            // Reset save button to create mode
+            document.getElementById('saveProductBtn').onclick = async function() {
+                await saveProduct();
+            };
+            
+            loadProducts();
+        } else {
+            alert('Error al actualizar producto');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+// Delete Product
+function deleteProduct(productId) {
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
+        fetch(`/api/products/${productId}`, {
+            method: 'DELETE'
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                alert('Producto eliminado exitosamente');
+                loadProducts();
+            } else {
+                alert('Error al eliminar producto');
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+    }
 }
 
 // Load materials
@@ -364,9 +767,9 @@ function loadMaterials() {
             tbody.innerHTML = '';
             materials.forEach(material => {
                 const statusBadge = material.status === 'critical' ? 
-                    '<span class="badge bg-danger">Critical</span>' :
+                    '<span class="badge bg-danger">Crítico</span>' :
                     material.status === 'low' ? 
-                    '<span class="badge bg-warning">Low</span>' :
+                    '<span class="badge bg-warning">Bajo</span>' :
                     '<span class="badge bg-success">OK</span>';
                 
                 const progressClass = material.status === 'critical' ? 'bg-danger' : 
@@ -388,7 +791,7 @@ function loadMaterials() {
                         <td>$${material.cost_per_gram.toFixed(4)}/g</td>
                         <td>
                             <button class="btn btn-sm btn-warning" onclick="logWaste(${material.id})">
-                                <i class="fas fa-trash"></i> Log Waste
+                                <i class="fas fa-trash"></i> Registrar Desperdicio
                             </button>
                         </td>
                     </tr>
@@ -404,7 +807,7 @@ async function showCostBreakdown(productId, productName) {
         const response = await fetch(`/api/chart/cost-breakdown/${productId}`);
         const data = await response.json();
         
-        document.getElementById('costModalTitle').textContent = `Cost Breakdown: ${productName}`;
+        document.getElementById('costModalTitle').textContent = `Desglose de Costos: ${productName}`;
         
         let tableHtml = '';
         data.labels.forEach((label, i) => {
@@ -419,7 +822,7 @@ async function showCostBreakdown(productId, productName) {
         
         tableHtml += `
             <tr class="table-light fw-bold">
-                <td>Total Production Cost</td>
+                <td>Costo Total de Producción</td>
                 <td>$${data.total.toFixed(2)}</td>
                 <td>100%</td>
             </tr>
@@ -436,10 +839,10 @@ async function showCostBreakdown(productId, productName) {
 
 // Log waste
 function logWaste(materialId) {
-    const grams = prompt('Grams of filament wasted:');
+    const grams = prompt('Gramos de filamento desperdiciado:');
     if (!grams) return;
     
-    const reason = prompt('Reason for waste (e.g., "Stringing", "Poor adhesion"):');
+    const reason = prompt('Motivo del desperdicio (ej. "Stringing", "Mala adherencia"):');
     if (!reason) return;
     
     fetch('/api/waste/log', {
@@ -454,7 +857,7 @@ function logWaste(materialId) {
     .then(r => r.json())
     .then(result => {
         if (result.success) {
-            alert(`Waste logged!\nCost Impact: $${result.cost_impact.toFixed(2)}\nRemaining: ${result.remaining_weight.toFixed(1)}g`);
+            alert(`¡Desperdicio registrado!\nImpacto de Costo: $${result.cost_impact.toFixed(2)}\nRestante: ${result.remaining_weight.toFixed(1)}g`);
             loadMaterials();
         }
     })
@@ -465,6 +868,7 @@ function logWaste(materialId) {
 document.addEventListener('DOMContentLoaded', function() {
     loadProducts();
     loadMaterials();
+    loadCategories();
 });
 </script>
 

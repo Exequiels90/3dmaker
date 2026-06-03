@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('Catálogo de Productos 3D') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            padding-top: 80px;
+            padding-bottom: 50px;
+            min-height: 100vh;
+        }
+        .navbar-custom {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 10px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .navbar-brand-custom {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #00d4ff;
+            font-weight: 700;
+            font-size: 1.2em;
+            text-decoration: none;
+        }
+        .navbar-brand-custom img {
+            max-height: 40px;
+            max-width: 40px;
+            border-radius: 50%;
+        }
+        .navbar-icons {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .navbar-icon {
+            color: #00d4ff;
+            font-size: 1.5em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .navbar-icon:hover {
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+        .cart-badge-custom {
+            position: relative;
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        .product-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.2);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+        .product-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00d4ff;
+        }
+        .price {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 153, 255, 0.1) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: white;
+            border-radius: 25px;
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.2);
+        }
+        .header h1 {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .info-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 25px;
+            margin: 5px;
+            font-size: 0.9em;
+            color: #00d4ff;
+        }
+        .badge {
+            font-size: 0.9em !important;
+            padding: 10px 15px !important;
+            background: rgba(0, 212, 255, 0.2) !important;
+            border: 1px solid rgba(0, 212, 255, 0.3) !important;
+            color: #00d4ff !important;
+        }
+        .cart-badge {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+            color: #0a0a0a;
+            padding: 18px 30px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+            cursor: pointer;
+            z-index: 9999;
+            display: block !important;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        .cart-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.6);
+        }
+        .cart-count {
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .carousel-item img {
+            width: 100%;
+            max-width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+        .carousel {
+            position: relative;
+            margin-bottom: 15px;
+            max-width: 100%;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+        .carousel-inner {
+            max-width: 100%;
+            border-radius: 15px;
+        }
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 45px;
+            height: 45px;
+            background: rgba(0, 212, 255, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        .carousel-control-prev:hover,
+        .carousel-control-next:hover {
+            background: rgba(0, 212, 255, 0.5);
+            border-color: rgba(0, 212, 255, 0.8);
+        }
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            width: 20px;
+            height: 20px;
+            filter: brightness(0) invert(1);
+        }
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.5);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .modal-content {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            color: #ffffff;
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-title {
+            color: #00d4ff;
+        }
+        .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        .input-group-text {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+        select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+        select option:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar-custom">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <a href="#" class="navbar-brand-custom">
+                    {% if config and config.company_logo_url %}
+                    <img src="{{ config.company_logo_url }}" alt="Logo">
+                    {% endif %}
+                    <span>{{ config.company_name if config else _('Catálogo de Productos 3D') }}</span>
+                </a>
+                <div class="navbar-icons">
+                    {% if config and config.instagram_url %}
+                    <a href="{{ config.instagram_url }}" target="_blank" class="navbar-icon">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    {% endif %}
+                    <a href="#" class="navbar-icon cart-badge-custom" data-bs-toggle="modal" data-bs-target="#cartModal">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="🔍 {{ _('Buscar productos...') }}" onkeyup="filterProducts()">
+            </div>
+            <div class="col-md-3">
+                <select id="categoryFilter" class="form-control" onchange="filterProducts()">
+                    <option value="">{{ _('Todas las categorías') }}</option>
+                    <!-- Las categorías se cargarán dinámicamente aquí -->
+                </select>
+            </div>
+            <div class="col-md-5">
+                <select id="sortOrder" class="form-control" onchange="filterProducts()">
+                    <option value="default">{{ _('Ordenar por: Relevancia') }}</option>
+                    <option value="price-asc">{{ _('Precio: Menor a Mayor') }}</option>
+                    <option value="price-desc">{{ _('Precio: Mayor a Menor') }}</option>
+                    <option value="name-asc">{{ _('Nombre: A-Z') }}</option>
+                    <option value="name-desc">{{ _('Nombre: Z-A') }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row" id="productsGrid">
+            {% for product in products %}
+            <div class="col-md-4 col-sm-6">
+                <div class="product-card" data-category="{{ product.category or 'General' }}">
+                    {% if product.images and product.images|length > 1 %}
+                    <div id="carousel-{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            {% for img in product.images|sort(attribute='sort_order') %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ img.image_url }}" alt="{{ product.name }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ product.id }}" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ product.id }}" data-bs-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                    </div>
+                    {% elif product.image_url %}
+                    <div class="product-image">
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+                    </div>
+                    {% else %}
+                    <div class="product-image">
+                        <span>{{ _('Sin imagen') }}</span>
+                    </div>
+                    {% endif %}
+                    <h4>{{ product.name }}</h4>
+                    {% if product.description %}
+                    <p class="text-muted small">{{ product.description }}</p>
+                    {% endif %}
+                    <p class="price">${{ product.retail_price if product.retail_price and product.retail_price > 0 else product.suggested_price if product.suggested_price else 'N/A' }} <small class="text-muted">({{ _('1 unidad') }})</small></p>
+                    {% if product.enable_quantity_discounts %}
+                    <div class="mt-3">
+                        <p class="small mb-1"><strong>{{ _('Precios por cantidad:') }}</strong></p>
+                        <div class="small">
+                            <span class="badge bg-secondary">+5: ${{ product.get_wholesale_price(5) if product.get_wholesale_price else 'N/A' }}</span>
+                            <span class="badge bg-secondary">+10: ${{ product.get_wholesale_price(10) if product.get_wholesale_price else 'N/A' }}</span>
+                            <span class="badge bg-secondary">+25: ${{ product.get_wholesale_price(25) if product.get_wholesale_price else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="mt-3">
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="quantity-{{ product.id }}" min="1" value="1" placeholder="{{ _('Cantidad') }}">
+                            <button class="btn btn-primary" onclick="addToCart({{ product.id }}, '{{ product.name }}', {{ product.retail_price if product.retail_price and product.retail_price > 0 else (product.suggested_price if product.suggested_price else 0) }}, {{ product.enable_quantity_discounts|lower }}, {{ product.discount_threshold_5 or 5 }}, {{ product.discount_threshold_10 or 10 }}, {{ product.discount_threshold_25 or 25 }})">
+                                <i class="fas fa-cart-plus"></i> {{ _('Agregar') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="cart-badge" onclick="showCartModal()">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-count" id="cartCount">0</span>
+    </div>
+    
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🛒 {{ _('Tu Carrito') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cartItems"></div>
+                    <div class="mt-3">
+                        <h5>{{ _('Total') }}: $<span id="cartTotal">0</span></h5>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Seguir comprando') }}</button>
+                    <button type="button" class="btn btn-success" onclick="showOrderForm()">{{ _('Confirmar Orden') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Form Modal -->
+    <div class="modal fade" id="orderModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📝 {{ _('Tus Datos') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="orderForm">
+                        <div class="mb-3">
+                            <label for="customerName" class="form-label">{{ _('Nombre *') }}</label>
+                            <input type="text" class="form-control" id="customerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerPhone" class="form-label">{{ _('Teléfono *') }}</label>
+                            <input type="tel" class="form-control" id="customerPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerEmail" class="form-label">{{ _('Email (opcional)') }}</label>
+                            <input type="email" class="form-control" id="customerEmail">
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ _('Tu orden expirará en 48 horas si no es confirmada') }}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancelar') }}</button>
+                    <button type="button" class="btn btn-success" onclick="submitOrder()">{{ _('Enviar Orden') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cart = [];
+        
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            
+            const productCards = document.querySelectorAll('.product-card');
+            const productsGrid = document.getElementById('productsGrid');
+            
+            // First filter products
+            const visibleCards = [];
+            productCards.forEach(card => {
+                const productName = card.querySelector('h4').textContent.toLowerCase();
+                const category = card.dataset.category || 'General';
+                
+                const matchesSearch = productName.includes(searchTerm);
+                const matchesCategory = categoryFilter === '' || category === categoryFilter;
+                
+                if (matchesSearch && matchesCategory) {
+                    visibleCards.push(card);
+                    card.parentElement.style.display = '';
+                } else {
+                    card.parentElement.style.display = 'none';
+                }
+            });
+            
+            // Then sort visible products
+            if (sortOrder !== 'default') {
+                const cardArray = Array.from(visibleCards);
+                
+                cardArray.sort((a, b) => {
+                    const priceA = parseFloat(a.querySelector('.price').textContent.replace('$', '')) || 0;
+                    const priceB = parseFloat(b.querySelector('.price').textContent.replace('$', '')) || 0;
+                    const nameA = a.querySelector('h4').textContent.toLowerCase();
+                    const nameB = b.querySelector('h4').textContent.toLowerCase();
+                    
+                    switch (sortOrder) {
+                        case 'price-asc':
+                            return priceA - priceB;
+                        case 'price-desc':
+                            return priceB - priceA;
+                        case 'name-asc':
+                            return nameA.localeCompare(nameB);
+                        case 'name-desc':
+                            return nameB.localeCompare(nameA);
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // Reorder in DOM
+                cardArray.forEach(card => {
+                    productsGrid.appendChild(card.parentElement);
+                });
+            }
+        }
+        
+        function addToCart(productId, productName, basePrice, enableDiscounts, threshold5, threshold10, threshold25) {
+            const quantity = parseInt(document.getElementById(`quantity-${productId}`).value) || 1;
+            
+            // Calcular precio según cantidad (solo si los descuentos están habilitados)
+            let price = basePrice;
+            if (enableDiscounts) {
+                if (quantity >= threshold25) {
+                    price = basePrice * 0.8; // 20% descuento
+                } else if (quantity >= threshold10) {
+                    price = basePrice * 0.85; // 15% descuento
+                } else if (quantity >= threshold5) {
+                    price = basePrice * 0.9; // 10% descuento
+                }
+            }
+            
+            const existingItem = cart.find(item => item.product_id === productId);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+                existingItem.unit_price = price;
+            } else {
+                cart.push({
+                    product_id: productId,
+                    name: productName,
+                    quantity: quantity,
+                    unit_price: price
+                });
+            }
+            
+            updateCartBadge();
+            alert(`${productName} agregado al carrito`);
+        }
+        
+        function updateCartBadge() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+        
+        function showCartModal() {
+            const cartItemsDiv = document.getElementById('cartItems');
+            let html = '';
+            let total = 0;
+            
+            if (cart.length === 0) {
+                html = '<p class="text-center text-muted">El carrito está vacío</p>';
+            } else {
+                cart.forEach(item => {
+                    const itemTotal = item.quantity * item.unit_price;
+                    total += itemTotal;
+                    html += `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${item.name}</strong><br>
+                                <small>${item.quantity} x $${item.unit_price.toFixed(2)}</small>
+                            </div>
+                            <div>
+                                <strong>$${itemTotal.toFixed(2)}</strong>
+                                <button class="btn btn-sm btn-danger ms-2" onclick="removeFromCart(${item.product_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            cartItemsDiv.innerHTML = html;
+            document.getElementById('cartTotal').textContent = total.toFixed(2);
+            
+            new bootstrap.Modal(document.getElementById('cartModal')).show();
+        }
+        
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.product_id !== productId);
+            updateCartBadge();
+            showCartModal();
+        }
+        
+        function showOrderForm() {
+            if (cart.length === 0) {
+                alert('El carrito está vacío');
+                return;
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
+            new bootstrap.Modal(document.getElementById('orderModal')).show();
+        }
+        
+        async function submitOrder() {
+            const customerName = document.getElementById('customerName').value;
+            const customerPhone = document.getElementById('customerPhone').value;
+            const customerEmail = document.getElementById('customerEmail').value;
+            
+            if (!customerName || !customerPhone) {
+                alert('Por favor completa nombre y teléfono');
+                return;
+            }
+            
+            const total = cart.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+            
+            const orderData = {
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_email: customerEmail,
+                items: cart,
+                total_amount: total
+            };
+            
+            try {
+                const response = await fetch('/api/customer-orders/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`¡Orden #${result.order_id} creada exitosamente!\nTe contactaremos en las próximas 48 horas.`);
+                    cart = [];
+                    updateCartBadge();
+                    bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+                } else {
+                    alert('Error al crear la orden');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+        
+        // Load categories
+        function loadCategories() {
+            fetch('/api/categories')
+                .then(r => r.json())
+                .then(categories => {
+                    const select = document.getElementById('categoryFilter');
+                    const defaultOption = select.querySelector('option[value=""]');
+                    select.innerHTML = '';
+                    select.appendChild(defaultOption);
+                    categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.name;
+                        option.textContent = cat.name;
+                        select.appendChild(option);
+                    });
+                });
+        }
+        
+        // Load categories on page load
+        loadCategories();
+    </script>
+</body>
+</html>

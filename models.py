@@ -1,8 +1,47 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime, timedelta
 from enum import Enum as PyEnum
+import bcrypt
 
 db = SQLAlchemy()
+
+
+class User(UserMixin, db.Model):
+    """Usuario del sistema para login"""
+    __tablename__ = 'user'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(20), default='vendedor', nullable=False)  # admin, vendedor
+    is_first_login = db.Column(db.Boolean, default=False, nullable=False)  # Para usuario admin inicial
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def set_password(self, password):
+        """Cifrar contraseña usando bcrypt"""
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    
+    def check_password(self, password):
+        """Verificar contraseña usando bcrypt"""
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+
+class Category(db.Model):
+    """Categoría de productos"""
+    __tablename__ = 'category'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Category {self.name}>'
 
 
 class Supplier(db.Model):
@@ -116,17 +155,57 @@ class MaintenanceLog(db.Model):
         return f'<MaintenanceLog Printer {self.printer_id} on {self.date}>'
 
 
+class ProductMaterial(db.Model):
+    """Tabla de asociación para productos multi-material"""
+    __tablename__ = 'product_material'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=False)
+    weight_grams = db.Column(db.Float, default=0.0, nullable=False)  # Gramos de este material para el producto
+    
+    material = db.relationship('Material')
+    
+    def __repr__(self):
+        return f'<ProductMaterial Product {self.product_id} - Material {self.material_id}>'
+
+
+class ProductImage(db.Model):
+    """Imágenes de productos (soporta múltiples imágenes por producto)"""
+    __tablename__ = 'product_image'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+    sort_order = db.Column(db.Integer, default=0, nullable=False)  # Orden de visualización
+    
+    product = db.relationship('Product', backref=db.backref('images', lazy=True, cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<ProductImage {self.product_id} - {self.image_url}>'
+
+
 class Product(db.Model):
     """Catálogo de diseños / productos finales a imprimir"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
-    slicer_weight = db.Column(db.Float, default=0.0, nullable=False)  # Gramos según laminador
+    description = db.Column(db.Text, nullable=True)  # Descripción para el catálogo
+    category = db.Column(db.String(100), nullable=True, default='General')  # Categoría del producto
+    slicer_weight = db.Column(db.Float, default=0.0, nullable=False)  # Gramos según laminador (legacy, se calcula desde ProductMaterial)
     print_time_hours = db.Column(db.Float, default=0.0, nullable=False)  # Formato decimal
     post_process_hours = db.Column(db.Float, default=0.0, nullable=False)  # Horas de trabajo manual
-    default_material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=True)
+    default_material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=True)  # Legacy para compatibilidad
     default_printer_id = db.Column(db.Integer, db.ForeignKey('printer.id'), nullable=True)
     additional_costs = db.Column(db.Float, default=0.0)  # Tornillos, imanes, packaging, etc.
+    image_url = db.Column(db.String(500), nullable=True)  # URL de imagen del producto
+    retail_price = db.Column(db.Float, default=0.0)  # Precio minorista (precio base)
+    enable_quantity_discounts = db.Column(db.Boolean, default=True)  # Habilitar descuentos por cantidad
+    discount_threshold_5 = db.Column(db.Integer, default=5)  # Umbral para descuento de 10%
+    discount_threshold_10 = db.Column(db.Integer, default=10)  # Umbral para descuento de 15%
+    discount_threshold_25 = db.Column(db.Integer, default=25)  # Umbral para descuento de 20%
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    materials = db.relationship('ProductMaterial', backref='product', cascade='all, delete-orphan')
 
     def calculate_production_cost(self, config=None):
         """
@@ -136,11 +215,15 @@ class Product(db.Model):
         if config is None:
             config = GlobalConfig.get_singleton()
         
-        filament = self.default_material
         printer = self.default_printer
         
-        # Costo de filamento
-        material_cost = (self.slicer_weight or 0.0) * (filament.cost_per_gram if filament else 0.0)
+        # Costo de filamento - soporte multi-material
+        if self.materials:
+            material_cost = sum(pm.weight_grams * (pm.material.cost_per_gram if pm.material else 0.0) for pm in self.materials)
+        else:
+            # Fallback a legacy default_material
+            filament = self.default_material
+            material_cost = (self.slicer_weight or 0.0) * (filament.cost_per_gram if filament else 0.0)
         
         # Costo de electricidad: (Watts / 1000) * Horas * $/kWh
         electricity_cost = ((printer.power_consumption if printer else 0.0) / 1000.0) * \
@@ -166,6 +249,13 @@ class Product(db.Model):
         }
 
     @property
+    def total_weight(self):
+        """Peso total del producto sumando todos los materiales"""
+        if self.materials:
+            return sum(pm.weight_grams for pm in self.materials)
+        return self.slicer_weight or 0.0
+
+    @property
     def suggested_price(self):
         """Precio de venta sugerido = costo * (1 + margen%)"""
         config = GlobalConfig.get_singleton()
@@ -173,6 +263,23 @@ class Product(db.Model):
         base_cost = costs['total']
         margin_factor = 1.0 + ((config.base_profit_margin or 150.0) / 100.0)
         return round(base_cost * margin_factor, 2)
+    
+    def get_wholesale_price(self, quantity):
+        """Calcular precio mayorista según cantidad"""
+        # Si tiene precio minorista definido, usarlo como base
+        base_price = self.retail_price if self.retail_price > 0 else self.suggested_price
+        
+        config = GlobalConfig.get_singleton()
+        discount = 0.0
+        
+        if quantity >= 25:
+            discount = config.wholesale_discount_25 or 20.0
+        elif quantity >= 10:
+            discount = config.wholesale_discount_10 or 15.0
+        elif quantity >= 5:
+            discount = config.wholesale_discount_5 or 10.0
+        
+        return round(base_price * (1 - discount / 100.0), 2)
 
     def __repr__(self):
         return f'<Product {self.name}>'
@@ -295,6 +402,13 @@ class GlobalConfig(db.Model):
     labor_hour_cost = db.Column(db.Float, default=15.0)  # $ por hora de trabajo
     base_profit_margin = db.Column(db.Float, default=150.0)  # Porcentaje de ganancia base
     fail_margin_multiplier = db.Column(db.Float, default=1.05)  # Factor de recargo por riesgo
+    wholesale_discount_5 = db.Column(db.Float, default=10.0)  # Descuento para +5 unidades (%)
+    wholesale_discount_10 = db.Column(db.Float, default=15.0)  # Descuento para +10 unidades (%)
+    wholesale_discount_25 = db.Column(db.Float, default=20.0)  # Descuento para +25 unidades (%)
+    payment_methods_json = db.Column(db.Text, default='["Efectivo", "Mercado Pago", "Transferencia"]')  # Métodos de pago (JSON)
+    company_name = db.Column(db.String(100), default='3D System')  # Nombre de la empresa
+    company_logo_url = db.Column(db.String(500), nullable=True)  # URL del logo de la empresa
+    instagram_url = db.Column(db.String(500), nullable=True)  # URL de Instagram
     
     @classmethod
     def get_singleton(cls):
@@ -308,3 +422,57 @@ class GlobalConfig(db.Model):
 
     def __repr__(self):
         return '<GlobalConfig>'
+
+
+class Expense(db.Model):
+    """Egresos / Gastos del sistema"""
+    __tablename__ = 'expense'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Filamento, Accesorio, Packaging, etc.
+    description = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Float, default=0.0, nullable=False)  # Monto total del gasto ($)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=True)
+    receipt_url = db.Column(db.String(500), nullable=True)  # URL de foto del ticket/factura
+    notes = db.Column(db.Text, nullable=True)
+    
+    supplier = db.relationship('Supplier')
+    material = db.relationship('Material')
+    
+    def __repr__(self):
+        return f'<Expense {self.category} - ${self.amount}>'
+
+
+class CustomerOrder(db.Model):
+    """Órdenes de clientes desde el catálogo web público"""
+    __tablename__ = 'customer_order'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(200), nullable=False)
+    customer_phone = db.Column(db.String(50), nullable=False)
+    customer_email = db.Column(db.String(120), nullable=True)
+    status = db.Column(db.String(50), default='Pendiente', nullable=False)  # Pendiente, Confirmada, Cancelada
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=True)  # Fecha de expiración (48hs)
+    
+    # Items de la orden (JSON con productos, cantidades y precios)
+    items_json = db.Column(db.Text, nullable=False)
+    total_amount = db.Column(db.Float, default=0.0, nullable=False)
+    
+    @property
+    def items(self):
+        """Parsear items JSON"""
+        import json
+        return json.loads(self.items_json) if self.items_json else []
+    
+    @property
+    def is_expired(self):
+        """Verificar si la orden expiró"""
+        if self.expires_at and datetime.utcnow() > self.expires_at:
+            return True
+        return False
+    
+    def __repr__(self):
+        return f'<CustomerOrder {self.id} - {self.customer_name} - {self.status}>'

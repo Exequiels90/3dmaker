@@ -1,0 +1,271 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ _('Reportes - Gestión de Taller 3D') }}{% endblock %}
+
+{% block page_title %}{{ _('Reportes') }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line mr-2"></i> {{ _('Reportes de Ventas y Producción') }}
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <!-- Report Type Selector -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <label>{{ _('Tipo de Reporte') }}</label>
+                        <select id="reportType" class="form-control" onchange="updateReport()">
+                            <option value="daily">{{ _('Diario') }}</option>
+                            <option value="weekly">{{ _('Semanal') }}</option>
+                            <option value="monthly">{{ _('Mensual') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>{{ _('Período') }}</label>
+                        <select id="periodOffset" class="form-control" onchange="updateReport()">
+                            <option value="0">{{ _('Actual') }}</option>
+                            <option value="1">{{ _('Anterior') }}</option>
+                            <option value="2">{{ _('2 anteriores') }}</option>
+                            <option value="3">{{ _('3 anteriores') }}</option>
+                            <option value="6">{{ _('6 anteriores') }}</option>
+                            <option value="12">{{ _('12 anteriores') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>{{ _('Fecha Específica') }}</label>
+                        <input type="date" id="specificDate" class="form-control" onchange="updateReport()">
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary w-100" onclick="exportReport()">
+                            <i class="fas fa-download mr-2"></i> {{ _('Exportar') }}
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ _('Ingresos Totales') }}</h5>
+                                <h3 id="totalRevenue">$0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ _('Órdenes') }}</h5>
+                                <h3 id="totalOrders">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ _('Productos Vendidos') }}</h5>
+                                <h3 id="totalProducts">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ _('Ganancia Estimada') }}</h5>
+                                <h3 id="totalProfit">$0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">{{ _('Ingresos por Día') }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">{{ _('Productos Más Vendidos') }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="productsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detailed Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">{{ _('Detalle de Órdenes') }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="ordersTable">
+                                <thead>
+                                    <tr>
+                                        <th>{{ _('Fecha') }}</th>
+                                        <th>{{ _('Cliente') }}</th>
+                                        <th>{{ _('Productos') }}</th>
+                                        <th>{{ _('Cantidad') }}</th>
+                                        <th>{{ _('Total') }}</th>
+                                        <th>{{ _('Estado') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let revenueChart = null;
+let productsChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today
+    document.getElementById('specificDate').valueAsDate = new Date();
+    updateReport();
+});
+
+function updateReport() {
+    const reportType = document.getElementById('reportType').value;
+    const periodOffset = parseInt(document.getElementById('periodOffset').value);
+    const specificDate = document.getElementById('specificDate').value;
+    
+    fetch('/api/reports?' + new URLSearchParams({
+        type: reportType,
+        offset: periodOffset,
+        date: specificDate
+    }))
+    .then(response => response.json())
+    .then(data => {
+        updateSummaryCards(data);
+        updateCharts(data);
+        updateTable(data.orders);
+    })
+    .catch(error => console.error('Error fetching report:', error));
+}
+
+function updateSummaryCards(data) {
+    document.getElementById('totalRevenue').textContent = '$' + (data.total_revenue || 0).toFixed(2);
+    document.getElementById('totalOrders').textContent = data.total_orders || 0;
+    document.getElementById('totalProducts').textContent = data.total_products || 0;
+    document.getElementById('totalProfit').textContent = '$' + (data.total_profit || 0).toFixed(2);
+}
+
+function updateCharts(data) {
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    if (revenueChart) {
+        revenueChart.destroy();
+    }
+    revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: data.revenue_by_day.labels || [],
+            datasets: [{
+                label: '{{ _('Ingresos') }}',
+                data: data.revenue_by_day.data || [],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Products Chart
+    const productsCtx = document.getElementById('productsChart').getContext('2d');
+    if (productsChart) {
+        productsChart.destroy();
+    }
+    productsChart = new Chart(productsCtx, {
+        type: 'bar',
+        data: {
+            labels: data.top_products.labels || [],
+            datasets: [{
+                label: '{{ _('Cantidad') }}',
+                data: data.top_products.data || [],
+                backgroundColor: '#28a745'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updateTable(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    tbody.innerHTML = '';
+    
+    orders.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${new Date(order.date).toLocaleDateString()}</td>
+            <td>${order.customer_name || '-'}</td>
+            <td>${order.products || '-'}</td>
+            <td>${order.quantity || 0}</td>
+            <td>$${(order.total || 0).toFixed(2)}</td>
+            <td><span class="badge badge-${getStatusClass(order.status)}">${order.status}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'Completed': return 'success';
+        case 'In Production': return 'warning';
+        case 'Pending': return 'info';
+        case 'Cancelled': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+function exportReport() {
+    const reportType = document.getElementById('reportType').value;
+    const periodOffset = parseInt(document.getElementById('periodOffset').value);
+    const specificDate = document.getElementById('specificDate').value;
+    
+    window.location.href = '/api/reports/export?' + new URLSearchParams({
+        type: reportType,
+        offset: periodOffset,
+        date: specificDate
+    });
+}
+</script>
+{% endblock %}

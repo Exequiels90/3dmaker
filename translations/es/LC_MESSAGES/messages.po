@@ -1,0 +1,641 @@
+# Spanish translations
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+
+msgid "Taller de Impresión 3D"
+msgstr "Taller de Impresión 3D"
+
+msgid "Dashboard"
+msgstr "Panel Principal"
+
+msgid "Sales"
+msgstr "Ventas"
+
+msgid "Inventory"
+msgstr "Inventario"
+
+msgid "Configuration"
+msgstr "Configuración"
+
+msgid "User Management"
+msgstr "Gestión de Usuarios"
+
+msgid "Customer Orders"
+msgstr "Órdenes de Clientes"
+
+msgid "Expenses"
+msgstr "Gastos"
+
+msgid "Login"
+msgstr "Iniciar Sesión"
+
+msgid "Logout"
+msgstr "Cerrar Sesión"
+
+msgid "Username"
+msgstr "Usuario"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Please login to access"
+msgstr "Por favor inicia sesión para acceder"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Spanish"
+msgstr "Español"
+
+msgid "English"
+msgstr "Inglés"
+
+msgid "Ventas y Órdenes"
+msgstr "Ventas y Órdenes"
+
+msgid "Inventario"
+msgstr "Inventario"
+
+msgid "Configuración"
+msgstr "Configuración"
+
+msgid "Sistema 3D"
+msgstr "Sistema 3D"
+
+msgid "Sistema de Gestión de Taller 3D"
+msgstr "Sistema de Gestión de Taller 3D"
+
+msgid "Inicio"
+msgstr "Inicio"
+
+msgid "Cerrar Sesión"
+msgstr "Cerrar Sesión"
+
+msgid "Todos los derechos reservados"
+msgstr "Todos los derechos reservados"
+
+msgid "Login - Sistema de Gestión 3D"
+msgstr "Login - Sistema de Gestión 3D"
+
+msgid "Sistema de Gestión 3D"
+msgstr "Sistema de Gestión 3D"
+
+msgid "Inicia sesión para continuar"
+msgstr "Inicia sesión para continuar"
+
+msgid "Usuario"
+msgstr "Usuario"
+
+msgid "Contraseña"
+msgstr "Contraseña"
+
+msgid "Iniciar Sesión"
+msgstr "Iniciar Sesión"
+
+msgid "Panel Principal - Taller de Impresión 3D"
+msgstr "Panel Principal - Taller de Impresión 3D"
+
+msgid "Panel Principal"
+msgstr "Panel Principal"
+
+msgid "Ingresos Mensuales"
+msgstr "Ingresos Mensuales"
+
+msgid "Egresos del Mes"
+msgstr "Egresos del Mes"
+
+msgid "Ganancia Real (Ingresos - Gastos)"
+msgstr "Ganancia Real (Ingresos - Gastos)"
+
+msgid "More info"
+msgstr "Más información"
+
+msgid "Total Filamento en Stock"
+msgstr "Total Filamento en Stock"
+
+msgid "Alertas Activas"
+msgstr "Alertas Activas"
+
+msgid "stock bajo"
+msgstr "stock bajo"
+
+msgid "mantenimiento necesario"
+msgstr "mantenimiento necesario"
+
+msgid "Configuración - Gestión de Taller 3D"
+msgstr "Configuración - Gestión de Taller 3D"
+
+msgid "Configuración del Sistema"
+msgstr "Configuración del Sistema"
+
+msgid "Configuración Global del Sistema"
+msgstr "Configuración Global del Sistema"
+
+msgid "Costo de Electricidad ($ por kWh)"
+msgstr "Costo de Electricidad ($ por kWh)"
+
+msgid "Ingrese su tarifa eléctrica local"
+msgstr "Ingrese su tarifa eléctrica local"
+
+msgid "Costo de Hora de Trabajo ($ por hora)"
+msgstr "Costo de Hora de Trabajo ($ por hora)"
+
+msgid "Margen de Ganancia Base (%)"
+msgstr "Margen de Ganancia Base (%)"
+
+msgid "Multiplicador de Riesgo de Falla"
+msgstr "Multiplicador de Riesgo de Falla"
+
+msgid "Descuentos por Cantidad (Mayorista)"
+msgstr "Descuentos por Cantidad (Mayorista)"
+
+msgid "Descuento para +5 unidades (%)"
+msgstr "Descuento para +5 unidades (%)"
+
+msgid "Descuento para +10 unidades (%)"
+msgstr "Descuento para +10 unidades (%)"
+
+msgid "Descuento para +25 unidades (%)"
+msgstr "Descuento para +25 unidades (%)"
+
+msgid "Métodos de Pago"
+msgstr "Métodos de Pago"
+
+msgid "Métodos de Pago Disponibles"
+msgstr "Métodos de Pago Disponibles"
+
+msgid "Agregar Método de Pago"
+msgstr "Agregar Método de Pago"
+
+msgid "Agregue los métodos de pago disponibles en su país/region"
+msgstr "Agregue los métodos de pago disponibles en su país/region"
+
+msgid "Guardar Configuración"
+msgstr "Guardar Configuración"
+
+msgid "Usuario"
+msgstr "Usuario"
+
+msgid "Gestión de Usuarios"
+msgstr "Gestión de Usuarios"
+
+msgid "Lista de Usuarios"
+msgstr "Lista de Usuarios"
+
+msgid "Nuevo Usuario"
+msgstr "Nuevo Usuario"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Rol"
+msgstr "Rol"
+
+msgid "Primer Login"
+msgstr "Primer Login"
+
+msgid "Creado"
+msgstr "Creado"
+
+msgid "Acciones"
+msgstr "Acciones"
+
+msgid "Ventas - Gestión de Taller 3D"
+msgstr "Ventas - Gestión de Taller 3D"
+
+msgid "Gestión de Ventas y Órdenes"
+msgstr "Gestión de Ventas y Órdenes"
+
+msgid "Crear Nueva Orden"
+msgstr "Crear Nueva Orden"
+
+msgid "Seleccionar Cliente o Crear Nuevo"
+msgstr "Seleccionar Cliente o Crear Nuevo"
+
+msgid "-- Nuevo Cliente --"
+msgstr "-- Nuevo Cliente --"
+
+msgid "Nombre del Cliente"
+msgstr "Nombre del Cliente"
+
+msgid "Opcional - se autocompleta si selecciona"
+msgstr "Opcional - se autocompleta si selecciona"
+
+msgid "Canal de Venta"
+msgstr "Canal de Venta"
+
+msgid "Local"
+msgstr "Local"
+
+msgid "Instagram"
+msgstr "Instagram"
+
+msgid "Web"
+msgstr "Web"
+
+msgid "WhatsApp"
+msgstr "WhatsApp"
+
+msgid "Método de Pago"
+msgstr "Método de Pago"
+
+msgid "Cash"
+msgstr "Efectivo"
+
+msgid "Transfer"
+msgstr "Transferencia"
+
+msgid "Mercado Pago"
+msgstr "Mercado Pago"
+
+msgid "Tarjeta"
+msgstr "Tarjeta"
+
+msgid "Comisión de Plataforma (%)"
+msgstr "Comisión de Plataforma (%)"
+
+msgid "Monto Total Facturado"
+msgstr "Monto Total Facturado"
+
+msgid "Ítems de la Orden"
+msgstr "Ítems de la Orden"
+
+msgid "Producto"
+msgstr "Producto"
+
+msgid "Cantidad"
+msgstr "Cantidad"
+
+msgid "Costo de Producción"
+msgstr "Costo de Producción"
+
+msgid "Precio Sugerido"
+msgstr "Precio Sugerido"
+
+msgid "Precio Final (Unitario)"
+msgstr "Precio Final (Unitario)"
+
+msgid "Total Línea"
+msgstr "Total Línea"
+
+msgid "Agregar Ítem"
+msgstr "Agregar Ítem"
+
+msgid "-- Seleccionar --"
+msgstr "-- Seleccionar --"
+
+msgid "Órdenes de Clientes - Sistema 3D"
+msgstr "Órdenes de Clientes - Sistema 3D"
+
+msgid "Órdenes de Clientes"
+msgstr "Órdenes de Clientes"
+
+msgid "Cliente"
+msgstr "Cliente"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Teléfono"
+msgstr "Teléfono"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Estado"
+msgstr "Estado"
+
+msgid "Fecha"
+msgstr "Fecha"
+
+msgid "Inventario - Gestión de Taller 3D"
+msgstr "Inventario - Gestión de Taller 3D"
+
+msgid "Gestión de Inventario y Catálogo"
+msgstr "Gestión de Inventario y Catálogo"
+
+msgid "Catálogo de Productos"
+msgstr "Catálogo de Productos"
+
+msgid "Agregar Nuevo Producto"
+msgstr "Agregar Nuevo Producto"
+
+msgid "Exportar Catálogo"
+msgstr "Exportar Catálogo"
+
+msgid "Nombre del Producto *"
+msgstr "Nombre del Producto *"
+
+msgid "Categoría"
+msgstr "Categoría"
+
+msgid "General"
+msgstr "General"
+
+msgid "Figuras"
+msgstr "Figuras"
+
+msgid "Utilitarios"
+msgstr "Utilitarios"
+
+msgid "Decoración"
+msgstr "Decoración"
+
+msgid "Juguetes"
+msgstr "Juguetes"
+
+msgid "Herramientas"
+msgstr "Herramientas"
+
+msgid "Accesorios"
+msgstr "Accesorios"
+
+msgid "Otros"
+msgstr "Otros"
+
+msgid "Descripción (para catálogo)"
+msgstr "Descripción (para catálogo)"
+
+msgid "Precio Minorista ($)"
+msgstr "Precio Minorista ($)"
+
+msgid "Descripción breve del producto"
+msgstr "Descripción breve del producto"
+
+msgid "0 = precio sugerido"
+msgstr "0 = precio sugerido"
+
+msgid "Peso Laminado (gramos) *"
+msgstr "Peso Laminado (gramos) *"
+
+msgid "Tiempo de Impresión (horas) *"
+msgstr "Tiempo de Impresión (horas) *"
+
+msgid "Tiempo de Post-Procesado (horas)"
+msgstr "Tiempo de Post-Procesado (horas)"
+
+msgid "Material (Opcional - ver abajo para multi-material)"
+msgstr "Material (Opcional - ver abajo para multi-material)"
+
+msgid "Impresora"
+msgstr "Impresora"
+
+msgid "Costos Adicionales ($)"
+msgstr "Costos Adicionales ($)"
+
+msgid "URL de Imagen"
+msgstr "URL de Imagen"
+
+msgid "Agregar"
+msgstr "Agregar"
+
+msgid "Habilitar Descuentos por Cantidad"
+msgstr "Habilitar Descuentos por Cantidad"
+
+msgid "Sí"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Umbral Descuento 10%"
+msgstr "Umbral Descuento 10%"
+
+msgid "Umbral Descuento 15%"
+msgstr "Umbral Descuento 15%"
+
+msgid "Umbral Descuento 20%"
+msgstr "Umbral Descuento 20%"
+
+msgid "Imágenes del Producto"
+msgstr "Imágenes del Producto"
+
+msgid "Gastos - Sistema 3D"
+msgstr "Gastos - Sistema 3D"
+
+msgid "Gastos"
+msgstr "Gastos"
+
+msgid "Agregar Gasto"
+msgstr "Agregar Gasto"
+
+msgid "Categoría"
+msgstr "Categoría"
+
+msgid "Descripción"
+msgstr "Descripción"
+
+msgid "Monto"
+msgstr "Monto"
+
+msgid "Material"
+msgstr "Material"
+
+msgid "Notas"
+msgstr "Notas"
+
+msgid "Peso"
+msgstr "Peso"
+
+msgid "Tiempo impresión"
+msgstr "Tiempo impresión"
+
+msgid "Tiempo post-proceso"
+msgstr "Tiempo post-proceso"
+
+msgid "Luz"
+msgstr "Luz"
+
+msgid "Amortización"
+msgstr "Amortización"
+
+msgid "Mano de obra"
+msgstr "Mano de obra"
+
+msgid "Insumos"
+msgstr "Insumos"
+
+msgid "Adicionales"
+msgstr "Adicionales"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Precio sugerido"
+msgstr "Precio sugerido"
+
+msgid "Catálogo de Productos 3D"
+msgstr "Catálogo de Productos 3D"
+
+msgid "Impresiones de alta calidad a medida"
+msgstr "Impresiones de alta calidad a medida"
+
+msgid "Buscar productos..."
+msgstr "Buscar productos..."
+
+msgid "Todas las categorías"
+msgstr "Todas las categorías"
+
+msgid "Ordenar por: Relevancia"
+msgstr "Ordenar por: Relevancia"
+
+msgid "Precio: Menor a Mayor"
+msgstr "Precio: Menor a Mayor"
+
+msgid "Precio: Mayor a Menor"
+msgstr "Precio: Mayor a Menor"
+
+msgid "Nombre: A-Z"
+msgstr "Nombre: A-Z"
+
+msgid "Nombre: Z-A"
+msgstr "Nombre: Z-A"
+
+msgid "Sin imagen"
+msgstr "Sin imagen"
+
+msgid "1 unidad"
+msgstr "1 unidad"
+
+msgid "Precios por cantidad:"
+msgstr "Precios por cantidad:"
+
+msgid "Cantidad"
+msgstr "Cantidad"
+
+msgid "Agregar"
+msgstr "Agregar"
+
+msgid "Tu Carrito"
+msgstr "Tu Carrito"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Seguir comprando"
+msgstr "Seguir comprando"
+
+msgid "Confirmar Orden"
+msgstr "Confirmar Orden"
+
+msgid "Tus Datos"
+msgstr "Tus Datos"
+
+msgid "Nombre *"
+msgstr "Nombre *"
+
+msgid "Teléfono *"
+msgstr "Teléfono *"
+
+msgid "Email (opcional)"
+msgstr "Email (opcional)"
+
+msgid "Tu orden expirará en 48 horas si no es confirmada"
+msgstr "Tu orden expirará en 48 horas si no es confirmada"
+
+msgid "Cancelar"
+msgstr "Cancelar"
+
+msgid "Enviar Orden"
+msgstr "Enviar Orden"
+
+msgid "Configuración de la Empresa"
+msgstr "Configuración de la Empresa"
+
+msgid "Nombre de la Empresa"
+msgstr "Nombre de la Empresa"
+
+msgid "Este nombre aparecerá en el sistema y catálogo público"
+msgstr "Este nombre aparecerá en el sistema y catálogo público"
+
+msgid "URL del Logo de la Empresa"
+msgstr "URL del Logo de la Empresa"
+
+msgid "URL de la imagen del logo (PNG, JPG, SVG)"
+msgstr "URL de la imagen del logo (PNG, JPG, SVG)"
+
+msgid "Reportes"
+msgstr "Reportes"
+
+msgid "Reportes de Ventas y Producción"
+msgstr "Reportes de Ventas y Producción"
+
+msgid "Tipo de Reporte"
+msgstr "Tipo de Reporte"
+
+msgid "Diario"
+msgstr "Diario"
+
+msgid "Semanal"
+msgstr "Semanal"
+
+msgid "Mensual"
+msgstr "Mensual"
+
+msgid "Período"
+msgstr "Período"
+
+msgid "Actual"
+msgstr "Actual"
+
+msgid "Anterior"
+msgstr "Anterior"
+
+msgid "2 anteriores"
+msgstr "2 anteriores"
+
+msgid "3 anteriores"
+msgstr "3 anteriores"
+
+msgid "6 anteriores"
+msgstr "6 anteriores"
+
+msgid "12 anteriores"
+msgstr "12 anteriores"
+
+msgid "Fecha Específica"
+msgstr "Fecha Específica"
+
+msgid "Exportar"
+msgstr "Exportar"
+
+msgid "Ingresos Totales"
+msgstr "Ingresos Totales"
+
+msgid "Órdenes"
+msgstr "Órdenes"
+
+msgid "Productos Vendidos"
+msgstr "Productos Vendidos"
+
+msgid "Ganancia Estimada"
+msgstr "Ganancia Estimada"
+
+msgid "Ingresos por Día"
+msgstr "Ingresos por Día"
+
+msgid "Productos Más Vendidos"
+msgstr "Productos Más Vendidos"
+
+msgid "Detalle de Órdenes"
+msgstr "Detalle de Órdenes"
+
+msgid "Cliente"
+msgstr "Cliente"
+
+msgid "Cantidad"
+msgstr "Cantidad"
+
+msgid "Estado"
+msgstr "Estado"
+
+msgid "URL de Instagram"
+msgstr "URL de Instagram"
+
+msgid "URL de tu perfil de Instagram"
+msgstr "URL de tu perfil de Instagram"
+
+msgid "Ingresos"
+msgstr "Ingresos"

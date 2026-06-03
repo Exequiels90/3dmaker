@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}3D Printing Workshop{% endblock %}</title>
+    <title>{% block title %}{{ _('Taller de Impresión 3D') }}{% endblock %}</title>
     
     <!-- AdminLTE CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
@@ -36,24 +36,49 @@
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="{{ url_for('main.dashboard') }}" class="nav-link">Home</a>
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link">{{ _('Inicio') }}</a>
                 </li>
             </ul>
             
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
                     <div class="navbar-text">
-                        <small>3D Printing Workshop Management System</small>
+                        <small>{{ _('Sistema de Gestión de Taller 3D') }}</small>
                     </div>
                 </li>
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <span class="navbar-text ms-3">
+                        <i class="fas fa-user"></i> {{ current_user.username }}
+                    </span>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-globe"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('main.set_language', lang='es') }}">Español</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.set_language', lang='en') }}">English</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('main.logout') }}" class="nav-link" title="Cerrar Sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </nav>
         
         <!-- Sidebar -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <a href="{{ url_for('main.dashboard') }}" class="brand-link">
+                {% if config and config.company_logo_url %}
+                <img src="{{ config.company_logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="max-height: 50px; max-width: 50px;">
+                {% else %}
                 <i class="fas fa-cube brand-image"></i>
-                <span class="brand-text font-weight-light">3D System</span>
+                {% endif %}
+                <span class="brand-text font-weight-light">{{ config.company_name if config else _('Sistema 3D') }}</span>
             </a>
             
             <div class="sidebar">
@@ -63,28 +88,76 @@
                         <li class="nav-item">
                             <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>Dashboard</p>
+                                <p>{{ _('Dashboard') }}</p>
                             </a>
                         </li>
                         
-                        <li class="nav-item">
-                            <a href="{{ url_for('main.sales') }}" class="nav-link {% if 'sales' in request.path %}active{% endif %}">
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link {% if 'sales' in request.path or 'customer-orders' in request.path %}active{% endif %}">
                                 <i class="nav-icon fas fa-shopping-cart"></i>
-                                <p>Sales & Orders</p>
+                                <p>
+                                    {{ _('Ventas y Órdenes') }}
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.sales') }}" class="nav-link {% if 'sales' in request.path and 'customer-orders' not in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Ventas y Órdenes') }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.customer_orders') }}" class="nav-link {% if 'customer-orders' in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Customer Orders') }}</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link {% if 'inventory' in request.path or 'expenses' in request.path %}active{% endif %}">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>
+                                    {{ _('Inventario') }}
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.inventory') }}" class="nav-link {% if 'inventory' in request.path and 'expenses' not in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Inventario') }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.expenses') }}" class="nav-link {% if 'expenses' in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Expenses') }}</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a href="{{ url_for('main.user_management') }}" class="nav-link {% if 'users' in request.path %}active{% endif %}">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>{{ _('User Management') }}</p>
                             </a>
                         </li>
                         
                         <li class="nav-item">
-                            <a href="{{ url_for('main.inventory') }}" class="nav-link {% if 'inventory' in request.path %}active{% endif %}">
-                                <i class="nav-icon fas fa-boxes"></i>
-                                <p>Inventory</p>
+                            <a href="{{ url_for('main.reports') }}" class="nav-link {% if 'reports' in request.path %}active{% endif %}">
+                                <i class="nav-icon fas fa-chart-line"></i>
+                                <p>{{ _('Reportes') }}</p>
                             </a>
                         </li>
                         
                         <li class="nav-item">
                             <a href="{{ url_for('main.config_page') }}" class="nav-link {% if 'config' in request.path %}active{% endif %}">
                                 <i class="nav-icon fas fa-cogs"></i>
-                                <p>Configuration</p>
+                                <p>{{ _('Configuración') }}</p>
                             </a>
                         </li>
                         
@@ -126,7 +199,7 @@
         
         <!-- Footer -->
         <footer class="main-footer">
-            <strong>3D Printing Workshop</strong> v1.0 | All rights reserved.
+            <strong>{{ _('Taller de Impresión 3D') }}</strong> v1.0 | {% trans %}Todos los derechos reservados{% endtrans %}.
             <div class="float-right d-none d-sm-inline-block">
                 <b>Version</b> 1.0
             </div>

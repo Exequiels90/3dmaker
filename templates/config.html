@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 
-{% block title %}Configuration - 3D Workshop Management{% endblock %}
+{% block title %}{{ _('Configuración - Gestión de Taller 3D') }}{% endblock %}
 
-{% block page_title %}System Configuration{% endblock %}
+{% block page_title %}{{ _('Configuración del Sistema') }}{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -11,44 +11,129 @@
         <div class="card card-warning">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-sliders-h mr-2"></i> Global System Settings
+                    <i class="fas fa-sliders-h mr-2"></i> {{ _('Configuración Global del Sistema') }}
                 </h3>
             </div>
             
             <form id="configForm">
                 <div class="card-body">
                     <div class="form-group">
-                        <label for="kwhCost">Electricity Cost ($ per kWh)</label>
+                        <label for="kwhCost">{{ _('Costo de Electricidad ($ por kWh)') }}</label>
                         <input type="number" id="kwhCost" class="form-control" min="0" step="0.001" 
                                value="{{ config.kwh_cost }}" required>
-                        <small class="text-muted">Enter your local electricity rate</small>
+                        <small class="text-muted">{{ _('Ingrese su tarifa eléctrica local') }}</small>
                     </div>
                     
                     <div class="form-group">
-                        <label for="laborHourCost">Labor Hour Cost ($ per hour)</label>
+                        <label for="laborHourCost">{{ _('Costo de Hora de Trabajo ($ por hora)') }}</label>
                         <input type="number" id="laborHourCost" class="form-control" min="0" step="0.01" 
                                value="{{ config.labor_hour_cost }}" required>
-                        <small class="text-muted">How much your technical labor/time is worth</small>
+                        <small class="text-muted">Cuánto vale su trabajo técnico/tiempo</small>
                     </div>
                     
                     <div class="form-group">
-                        <label for="baseProfitMargin">Base Profit Margin (%)</label>
+                        <label for="baseProfitMargin">{{ _('Margen de Ganancia Base (%)') }}</label>
                         <input type="number" id="baseProfitMargin" class="form-control" min="0" step="1" 
                                value="{{ config.base_profit_margin }}" required>
-                        <small class="text-muted">Markup percentage on production cost (e.g., 150%)</small>
+                        <small class="text-muted">Porcentaje de margen sobre el costo de producción (ej. 150%)</small>
                     </div>
                     
                     <div class="form-group">
-                        <label for="failMarginMultiplier">Failure Risk Multiplier</label>
+                        <label for="failMarginMultiplier">{{ _('Multiplicador de Riesgo de Falla') }}</label>
                         <input type="number" id="failMarginMultiplier" class="form-control" min="1" step="0.01" 
                                value="{{ config.fail_margin_multiplier }}" required>
-                        <small class="text-muted">Recargo factor for failure risk (e.g., 1.05 = 5% extra)</small>
+                        <small class="text-muted">Factor de recargo por riesgo de falla (ej. 1.05 = 5% extra)</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-3">{{ _('Descuentos por Cantidad (Mayorista)') }}</h5>
+                    
+                    <div class="form-group">
+                        <label for="wholesaleDiscount5">{{ _('Descuento para +5 unidades (%)') }}</label>
+                        <input type="number" id="wholesaleDiscount5" class="form-control" min="0" step="1" 
+                               value="{{ config.wholesale_discount_5 }}" required>
+                        <small class="text-muted">Porcentaje de descuento para compras de 5 o más unidades</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wholesaleDiscount10">{{ _('Descuento para +10 unidades (%)') }}</label>
+                        <input type="number" id="wholesaleDiscount10" class="form-control" min="0" step="1" 
+                               value="{{ config.wholesale_discount_10 }}" required>
+                        <small class="text-muted">Porcentaje de descuento para compras de 10 o más unidades</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wholesaleDiscount25">{{ _('Descuento para +25 unidades (%)') }}</label>
+                        <input type="number" id="wholesaleDiscount25" class="form-control" min="0" step="1" 
+                               value="{{ config.wholesale_discount_25 }}" required>
+                        <small class="text-muted">Porcentaje de descuento para compras de 25 o más unidades</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-3">{{ _('Configuración de la Empresa') }}</h5>
+                    
+                    <div class="form-group">
+                        <label for="companyName">{{ _('Nombre de la Empresa') }}</label>
+                        <input type="text" id="companyName" class="form-control" 
+                               value="{{ config.company_name or '' }}" placeholder="3D System">
+                        <small class="text-muted">{{ _('Este nombre aparecerá en el sistema y catálogo público') }}</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="companyLogoUrl">{{ _('URL del Logo de la Empresa') }}</label>
+                        <input type="text" id="companyLogoUrl" class="form-control" 
+                               value="{{ config.company_logo_url or '' }}" placeholder="https://...">
+                        <small class="text-muted">{{ _('URL de la imagen del logo (PNG, JPG, SVG)') }}</small>
+                        {% if config.company_logo_url %}
+                        <div class="mt-2">
+                            <img src="{{ config.company_logo_url }}" alt="Logo" style="max-height: 50px; max-width: 200px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instagramUrl">{{ _('URL de Instagram') }}</label>
+                        <input type="text" id="instagramUrl" class="form-control" 
+                               value="{{ config.instagram_url or '' }}" placeholder="https://instagram.com/...">
+                        <small class="text-muted">{{ _('URL de tu perfil de Instagram') }}</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-3">{{ _('Métodos de Pago') }}</h5>
+                    
+                    <div class="form-group">
+                        <label>{{ _('Métodos de Pago Disponibles') }}</label>
+                        <div id="paymentMethodsContainer">
+                            <!-- Los métodos de pago se cargarán dinámicamente aquí -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-success mt-2" onclick="addPaymentMethod()">
+                            <i class="fas fa-plus"></i> {{ _('Agregar Método de Pago') }}
+                        </button>
+                        <small class="text-muted">{{ _('Agregue los métodos de pago disponibles en su país/region') }}</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-3">{{ _('Categorías de Productos') }}</h5>
+                    
+                    <div class="form-group">
+                        <label>{{ _('Categorías Disponibles') }}</label>
+                        <div id="categoriesContainer">
+                            <!-- Las categorías se cargarán dinámicamente aquí -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-success mt-2" onclick="addCategory()">
+                            <i class="fas fa-plus"></i> {{ _('Agregar Categoría') }}
+                        </button>
+                        <small class="text-muted">{{ _('Agregue las categorías de productos que ofrece') }}</small>
                     </div>
                 </div>
                 
                 <div class="card-footer">
                     <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-save mr-2"></i> Save Settings
+                        <i class="fas fa-save mr-2"></i> {{ _('Guardar Configuración') }}
                     </button>
                 </div>
             </form>
@@ -60,7 +145,7 @@
         <div class="card card-info">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-print mr-2"></i> Printers
+                    <i class="fas fa-print mr-2"></i> Impresoras
                 </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool btn-sm" id="togglePrinterForm">
@@ -73,24 +158,24 @@
                 <!-- New Printer Form -->
                 <div id="printerForm" class="mb-3" style="display:none;">
                     <div class="input-group mb-2">
-                        <input type="text" id="printerName" class="form-control" placeholder="Printer name">
+                        <input type="text" id="printerName" class="form-control" placeholder="Nombre de impresora">
                         <input type="number" id="printerWatts" class="form-control" placeholder="Watts" min="0">
                     </div>
                     <div class="input-group mb-2">
-                        <input type="number" id="printerPrice" class="form-control" placeholder="Purchase price $" min="0">
-                        <input type="number" id="printerLifespan" class="form-control" placeholder="Lifespan (hours)" min="1" value="5000">
+                        <input type="number" id="printerPrice" class="form-control" placeholder="Precio de compra $" min="0">
+                        <input type="number" id="printerLifespan" class="form-control" placeholder="Vida útil (horas)" min="1" value="5000">
                     </div>
-                    <button type="button" class="btn btn-sm btn-info btn-block" id="savePrinterBtn">Add Printer</button>
+                    <button type="button" class="btn btn-sm btn-info btn-block" id="savePrinterBtn">Agregar Impresora</button>
                 </div>
                 
                 <!-- Printers List -->
                 <table class="table table-sm" id="printersTable">
                     <thead class="table-light">
                         <tr>
-                            <th>Name</th>
-                            <th>Power</th>
-                            <th>Hours</th>
-                            <th>Status</th>
+                            <th>Nombre</th>
+                            <th>Potencia</th>
+                            <th>Horas</th>
+                            <th>Estado</th>
                             <th>Deprec/h</th>
                         </tr>
                     </thead>
@@ -108,7 +193,7 @@
         <div class="card card-secondary">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-wrench mr-2"></i> Maintenance History
+                    <i class="fas fa-wrench mr-2"></i> Historial de Mantenimiento
                 </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool btn-sm" id="toggleMaintenanceForm">
@@ -124,7 +209,7 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label for="maintenancePrinter">Printer</label>
+                                    <label for="maintenancePrinter">Impresora</label>
                                     <select id="maintenancePrinter" class="form-select">
                                         <option value="">-- Select --</option>
                                     </select>
@@ -132,18 +217,18 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label for="maintenanceCost">Cost ($)</label>
+                                    <label for="maintenanceCost">Costo ($)</label>
                                     <input type="number" id="maintenanceCost" class="form-control" min="0" step="0.01">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="maintenanceDesc">Description</label>
-                                    <input type="text" id="maintenanceDesc" class="form-control" placeholder="e.g., Nozzle replacement, belt tension">
+                                    <label for="maintenanceDesc">Descripción</label>
+                                    <input type="text" id="maintenanceDesc" class="form-control" placeholder="ej. Reemplazo de nozzle, tensión de correas">
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-primary" id="saveMaintenanceBtn">Log Maintenance</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="saveMaintenanceBtn">Registrar Mantenimiento</button>
                     </div>
                 </div>
                 
@@ -151,10 +236,10 @@
                 <table class="table table-striped table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th>Printer</th>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Cost</th>
+                            <th>Impresora</th>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Costo</th>
                         </tr>
                     </thead>
                     <tbody id="maintenanceBody">
@@ -174,116 +259,316 @@
 </div>
 
 <script>
-// Config Form Submit
-document.getElementById('configForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const configData = {
-        kwh_cost: parseFloat(document.getElementById('kwhCost').value),
-        labor_hour_cost: parseFloat(document.getElementById('laborHourCost').value),
-        base_profit_margin: parseFloat(document.getElementById('baseProfitMargin').value),
-        fail_margin_multiplier: parseFloat(document.getElementById('failMarginMultiplier').value)
-    };
-    
+let paymentMethods = [];
+
+// Payment Methods Management
+function loadPaymentMethods() {
     try {
-        const response = await fetch('/api/config/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(configData)
+        const configData = '{{ config.payment_methods_json }}';
+        paymentMethods = JSON.parse(configData || '[]');
+    } catch (e) {
+        paymentMethods = ['Efectivo', 'Mercado Pago', 'Transferencia'];
+    }
+    renderPaymentMethods();
+}
+
+function renderPaymentMethods() {
+    const container = document.getElementById('paymentMethodsContainer');
+    container.innerHTML = '';
+    
+    paymentMethods.forEach((method, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="text" class="form-control" value="${method}" onchange="updatePaymentMethod(${index}, this.value)">
+            <div class="input-group-append">
+                <button type="button" class="btn btn-danger" onclick="removePaymentMethod(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addPaymentMethod() {
+    paymentMethods.push('');
+    renderPaymentMethods();
+}
+
+function updatePaymentMethod(index, value) {
+    paymentMethods[index] = value;
+}
+
+function removePaymentMethod(index) {
+    if (paymentMethods.length > 1) {
+        paymentMethods.splice(index, 1);
+        renderPaymentMethods();
+    } else {
+        alert('Debe haber al menos un método de pago');
+    }
+}
+
+// Categories Management
+let categories = [];
+
+function loadCategories() {
+    fetch('/api/categories')
+        .then(r => r.json())
+        .then(data => {
+            categories = data;
+            renderCategories();
         });
-        
-        if (response.ok) {
-            alert('Settings saved successfully');
-        } else {
-            alert('Error saving settings');
-        }
-    } catch (err) {
-        alert('Error: ' + err.message);
-    }
-});
+}
 
-// Printer Form
-document.getElementById('togglePrinterForm').addEventListener('click', function() {
-    const form = document.getElementById('printerForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-});
+function renderCategories() {
+    const container = document.getElementById('categoriesContainer');
+    container.innerHTML = '';
+    
+    categories.forEach((cat, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="text" class="form-control" value="${cat.name}" onchange="updateCategory(${index}, this.value)">
+            <div class="input-group-append">
+                <button type="button" class="btn btn-danger" onclick="removeCategory(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
 
-document.getElementById('savePrinterBtn').addEventListener('click', async function() {
-    const printerData = {
-        name: document.getElementById('printerName').value,
-        power_consumption: parseFloat(document.getElementById('printerWatts').value),
-        purchase_price: parseFloat(document.getElementById('printerPrice').value),
-        estimated_lifespan: parseFloat(document.getElementById('printerLifespan').value)
-    };
-    
-    if (!printerData.name || !printerData.power_consumption || !printerData.purchase_price) {
-        alert('Please fill in all required fields');
-        return;
+function addCategory() {
+    categories.push({ name: '', description: '' });
+    renderCategories();
+}
+
+function updateCategory(index, value) {
+    categories[index].name = value;
+}
+
+function removeCategory(index) {
+    if (categories.length > 1) {
+        categories.splice(index, 1);
+        renderCategories();
+    } else {
+        alert('Debe haber al menos una categoría');
     }
+}
+
+// Load data on page init
+document.addEventListener('DOMContentLoaded', function() {
+    loadPrinters();
+    loadPaymentMethods();
+    loadCategories();
     
-    try {
-        const response = await fetch('/api/printers/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(printerData)
+    // Config Form Submit
+    const configForm = document.getElementById('configForm');
+    if (configForm) {
+        configForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const configData = {
+                kwh_cost: parseFloat(document.getElementById('kwhCost').value),
+                labor_hour_cost: parseFloat(document.getElementById('laborHourCost').value),
+                base_profit_margin: parseFloat(document.getElementById('baseProfitMargin').value),
+                fail_margin_multiplier: parseFloat(document.getElementById('failMarginMultiplier').value),
+                wholesale_discount_5: parseFloat(document.getElementById('wholesaleDiscount5').value),
+                wholesale_discount_10: parseFloat(document.getElementById('wholesaleDiscount10').value),
+                wholesale_discount_25: parseFloat(document.getElementById('wholesaleDiscount25').value),
+                payment_methods_json: JSON.stringify(paymentMethods),
+                company_name: document.getElementById('companyName').value,
+                company_logo_url: document.getElementById('companyLogoUrl').value,
+                instagram_url: document.getElementById('instagramUrl').value
+            };
+            
+            try {
+                const response = await fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configData)
+                });
+                
+                if (response.ok) {
+                    alert('Configuración guardada exitosamente');
+                } else {
+                    alert('Error al guardar configuración');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         });
-        
-        if (response.ok) {
-            alert('Printer added successfully');
-            document.getElementById('printerName').value = '';
-            document.getElementById('printerWatts').value = '';
-            document.getElementById('printerPrice').value = '';
-            document.getElementById('printerLifespan').value = '5000';
-            document.getElementById('printerForm').style.display = 'none';
-            loadPrinters();
-        } else {
-            alert('Error adding printer');
-        }
-    } catch (err) {
-        alert('Error: ' + err.message);
-    }
-});
-
-// Maintenance Form
-document.getElementById('toggleMaintenanceForm').addEventListener('click', function() {
-    const form = document.getElementById('maintenanceForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-});
-
-document.getElementById('saveMaintenanceBtn').addEventListener('click', async function() {
-    const printerId = document.getElementById('maintenancePrinter').value;
-    if (!printerId) {
-        alert('Please select a printer');
-        return;
     }
     
-    const maintenanceData = {
-        printer_id: parseInt(printerId),
-        description: document.getElementById('maintenanceDesc').value,
-        cost: parseFloat(document.getElementById('maintenanceCost').value) || 0
-    };
-    
-    try {
-        const response = await fetch('/api/maintenance/log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(maintenanceData)
+    // Printer Form
+    const togglePrinterForm = document.getElementById('togglePrinterForm');
+    if (togglePrinterForm) {
+        togglePrinterForm.addEventListener('click', function() {
+            const form = document.getElementById('printerForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
         });
-        
-        if (response.ok) {
-            alert('Maintenance logged successfully');
-            document.getElementById('maintenancePrinter').value = '';
-            document.getElementById('maintenanceDesc').value = '';
-            document.getElementById('maintenanceCost').value = '';
-            document.getElementById('maintenanceForm').style.display = 'none';
-            location.reload(); // Reload to show new log
-        } else {
-            alert('Error logging maintenance');
-        }
-    } catch (err) {
-        alert('Error: ' + err.message);
+    }
+    
+    const savePrinterBtn = document.getElementById('savePrinterBtn');
+    if (savePrinterBtn) {
+        savePrinterBtn.addEventListener('click', async function() {
+            const printerData = {
+                name: document.getElementById('printerName').value,
+                power_consumption: parseFloat(document.getElementById('printerWatts').value),
+                purchase_price: parseFloat(document.getElementById('printerPrice').value),
+                estimated_lifespan: parseFloat(document.getElementById('printerLifespan').value)
+            };
+            
+            if (!printerData.name || !printerData.power_consumption || !printerData.purchase_price) {
+                alert('Por favor complete todos los campos requeridos');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/printers/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(printerData)
+                });
+                
+                if (response.ok) {
+                    alert('Impresora agregada exitosamente');
+                    document.getElementById('printerName').value = '';
+                    document.getElementById('printerWatts').value = '';
+                    document.getElementById('printerPrice').value = '';
+                    document.getElementById('printerLifespan').value = '5000';
+                    document.getElementById('printerForm').style.display = 'none';
+                    loadPrinters();
+                } else {
+                    alert('Error al agregar impresora');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+    }
+    
+    // Maintenance Form
+    const toggleMaintenanceForm = document.getElementById('toggleMaintenanceForm');
+    if (toggleMaintenanceForm) {
+        toggleMaintenanceForm.addEventListener('click', function() {
+            const form = document.getElementById('maintenanceForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+    
+    // Expense Form
+    const toggleExpenseForm = document.getElementById('toggleExpenseForm');
+    if (toggleExpenseForm) {
+        toggleExpenseForm.addEventListener('click', function() {
+            const form = document.getElementById('expenseForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+    
+    const saveExpenseBtn = document.getElementById('saveExpenseBtn');
+    if (saveExpenseBtn) {
+        saveExpenseBtn.addEventListener('click', async function() {
+            const expenseData = {
+                date: document.getElementById('expenseDate').value,
+                category: document.getElementById('expenseCategory').value,
+                description: document.getElementById('expenseDescription').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value) || 0,
+                supplier_id: document.getElementById('expenseSupplier').value || null,
+                material_id: document.getElementById('expenseMaterial').value || null,
+                receipt_url: document.getElementById('expenseReceipt').value || null,
+                notes: document.getElementById('expenseNotes').value || null
+            };
+            
+            if (!expenseData.description || !expenseData.amount) {
+                alert('Por favor complete la descripción y el monto');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/expenses/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(expenseData)
+                });
+                
+                if (response.ok) {
+                    alert('Gasto registrado exitosamente');
+                    document.getElementById('expenseForm').style.display = 'none';
+                    document.getElementById('expenseDate').value = '';
+                    document.getElementById('expenseDescription').value = '';
+                    document.getElementById('expenseAmount').value = '';
+                    document.getElementById('expenseSupplier').value = '';
+                    document.getElementById('expenseMaterial').value = '';
+                    document.getElementById('expenseReceipt').value = '';
+                    document.getElementById('expenseNotes').value = '';
+                    location.reload(); // Reload to show new expense
+                } else {
+                    alert('Error al registrar gasto');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+    }
+    
+    // Maintenance Form
+    const saveMaintenanceBtn = document.getElementById('saveMaintenanceBtn');
+    if (saveMaintenanceBtn) {
+        saveMaintenanceBtn.addEventListener('click', async function() {
+            const printerId = document.getElementById('maintenancePrinter').value;
+            if (!printerId) {
+                alert('Por favor seleccione una impresora');
+                return;
+            }
+            
+            const maintenanceData = {
+                printer_id: parseInt(printerId),
+                cost: parseFloat(document.getElementById('maintenanceCost').value) || 0,
+                description: document.getElementById('maintenanceDesc').value
+            };
+            
+            try {
+                const response = await fetch('/api/maintenance/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(maintenanceData)
+                });
+                
+                if (response.ok) {
+                    alert('Mantenimiento registrado exitosamente');
+                    document.getElementById('maintenanceCost').value = '';
+                    document.getElementById('maintenanceDesc').value = '';
+                    document.getElementById('maintenancePrinter').value = '';
+                    location.reload(); // Reload to show new log
+                } else {
+                    alert('Error al registrar mantenimiento');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
     }
 });
+
+function deleteExpense(expenseId) {
+    if (confirm('¿Está seguro de eliminar este gasto?')) {
+        fetch(`/api/expenses/${expenseId}`, {
+            method: 'DELETE'
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Error al eliminar gasto');
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+    }
+}
 
 // Load printers
 function loadPrinters() {
@@ -295,7 +580,7 @@ function loadPrinters() {
             tbody.innerHTML = '';
             printers.forEach(p => {
                 const statusBadge = p.needs_maintenance ? 
-                    '<span class="badge bg-warning">Maintenance Due</span>' :
+                    '<span class="badge bg-warning">Mantenimiento Requerido</span>' :
                     '<span class="badge bg-success">OK</span>';
                 
                 const row = `
