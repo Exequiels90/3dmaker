@@ -50,24 +50,14 @@
                     <h5 class="mt-3">{{ _('Descuentos por Cantidad (Mayorista)') }}</h5>
                     
                     <div class="form-group">
-                        <label for="wholesaleDiscount5">{{ _('Descuento para +5 unidades (%)') }}</label>
-                        <input type="number" id="wholesaleDiscount5" class="form-control" min="0" step="1" 
-                               value="{{ config.wholesale_discount_5 }}" required>
-                        <small class="text-muted">Porcentaje de descuento para compras de 5 o más unidades</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="wholesaleDiscount10">{{ _('Descuento para +10 unidades (%)') }}</label>
-                        <input type="number" id="wholesaleDiscount10" class="form-control" min="0" step="1" 
-                               value="{{ config.wholesale_discount_10 }}" required>
-                        <small class="text-muted">Porcentaje de descuento para compras de 10 o más unidades</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="wholesaleDiscount25">{{ _('Descuento para +25 unidades (%)') }}</label>
-                        <input type="number" id="wholesaleDiscount25" class="form-control" min="0" step="1" 
-                               value="{{ config.wholesale_discount_25 }}" required>
-                        <small class="text-muted">Porcentaje de descuento para compras de 25 o más unidades</small>
+                        <label>{{ _('Reglas de Descuento') }}</label>
+                        <div id="wholesaleDiscountsContainer">
+                            <!-- Los descuentos se cargarán dinámicamente aquí -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-success mt-2" onclick="addWholesaleDiscount()">
+                            <i class="fas fa-plus"></i> {{ _('Agregar Regla de Descuento') }}
+                        </button>
+                        <small class="text-muted">{{ _('Configure descuentos por cantidad de productos (ej: 10+ unidades = 15% descuento)') }}</small>
                     </div>
                     
                     <hr>
@@ -358,11 +348,77 @@ function removeCategory(index) {
     }
 }
 
+// Wholesale Discounts Management
+let wholesaleDiscounts = [];
+
+function loadWholesaleDiscounts() {
+    try {
+        const configJson = '{{ config.wholesale_discounts_json | safe if config.wholesale_discounts_json else "" }}';
+        if (configJson) {
+            wholesaleDiscounts = JSON.parse(configJson);
+        } else {
+            wholesaleDiscounts = [
+                { threshold: 5, discount: 10, enabled: true },
+                { threshold: 10, discount: 15, enabled: true },
+                { threshold: 25, discount: 20, enabled: true }
+            ];
+        }
+    } catch (e) {
+        wholesaleDiscounts = [
+            { threshold: 5, discount: 10, enabled: true },
+            { threshold: 10, discount: 15, enabled: true },
+            { threshold: 25, discount: 20, enabled: true }
+        ];
+    }
+    renderWholesaleDiscounts();
+}
+
+function renderWholesaleDiscounts() {
+    const container = document.getElementById('wholesaleDiscountsContainer');
+    container.innerHTML = '';
+    
+    wholesaleDiscounts.forEach((discount, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="number" class="form-control" placeholder="Cantidad" value="${discount.threshold}" 
+                   onchange="updateWholesaleDiscount(${index}, 'threshold', this.value)" min="1">
+            <input type="number" class="form-control" placeholder="%" value="${discount.discount}" 
+                   onchange="updateWholesaleDiscount(${index}, 'discount', this.value)" min="0" max="100">
+            <div class="input-group-text">
+                <input type="checkbox" ${discount.enabled ? 'checked' : ''} 
+                       onchange="updateWholesaleDiscount(${index}, 'enabled', this.checked)">
+            </div>
+            <div class="input-group-append">
+                <button type="button" class="btn btn-danger" onclick="removeWholesaleDiscount(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addWholesaleDiscount() {
+    wholesaleDiscounts.push({ threshold: '', discount: '', enabled: true });
+    renderWholesaleDiscounts();
+}
+
+function updateWholesaleDiscount(index, field, value) {
+    wholesaleDiscounts[index][field] = field === 'enabled' ? value : parseFloat(value);
+}
+
+function removeWholesaleDiscount(index) {
+    wholesaleDiscounts.splice(index, 1);
+    renderWholesaleDiscounts();
+}
+
 // Load data on page init
 document.addEventListener('DOMContentLoaded', function() {
     loadPrinters();
     loadPaymentMethods();
     loadCategories();
+    loadWholesaleDiscounts();
     
     // Config Form Submit
     const configForm = document.getElementById('configForm');
@@ -375,9 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 labor_hour_cost: parseFloat(document.getElementById('laborHourCost').value),
                 base_profit_margin: parseFloat(document.getElementById('baseProfitMargin').value),
                 fail_margin_multiplier: parseFloat(document.getElementById('failMarginMultiplier').value),
-                wholesale_discount_5: parseFloat(document.getElementById('wholesaleDiscount5').value),
-                wholesale_discount_10: parseFloat(document.getElementById('wholesaleDiscount10').value),
-                wholesale_discount_25: parseFloat(document.getElementById('wholesaleDiscount25').value),
+                wholesale_discounts_json: JSON.stringify(wholesaleDiscounts),
                 payment_methods_json: JSON.stringify(paymentMethods),
                 company_name: document.getElementById('companyName').value,
                 company_logo_url: document.getElementById('companyLogoUrl').value,

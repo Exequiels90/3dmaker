@@ -514,9 +514,7 @@ def api_products_create():
             additional_costs=data.get('additional_costs', 0),
             image_url=data.get('image_url'),
             enable_quantity_discounts=data.get('enable_quantity_discounts', True),
-            discount_threshold_5=data.get('discount_threshold_5', 5),
-            discount_threshold_10=data.get('discount_threshold_10', 10),
-            discount_threshold_25=data.get('discount_threshold_25', 25)
+            quantity_discounts_json=data.get('quantity_discounts_json')
         )
         
         db.session.add(product)
@@ -580,9 +578,7 @@ def api_products_update(product_id):
         product.additional_costs = data.get('additional_costs', product.additional_costs)
         product.image_url = data.get('image_url', product.image_url)
         product.enable_quantity_discounts = data.get('enable_quantity_discounts', product.enable_quantity_discounts)
-        product.discount_threshold_5 = data.get('discount_threshold_5', product.discount_threshold_5)
-        product.discount_threshold_10 = data.get('discount_threshold_10', product.discount_threshold_10)
-        product.discount_threshold_25 = data.get('discount_threshold_25', product.discount_threshold_25)
+        product.quantity_discounts_json = data.get('quantity_discounts_json')
         
         # Handle multiple materials
         materials_data = data.get('materials', [])
@@ -1221,12 +1217,8 @@ def api_config_update():
             config.base_profit_margin = data['base_profit_margin']
         if 'fail_margin_multiplier' in data:
             config.fail_margin_multiplier = data['fail_margin_multiplier']
-        if 'wholesale_discount_5' in data:
-            config.wholesale_discount_5 = data['wholesale_discount_5']
-        if 'wholesale_discount_10' in data:
-            config.wholesale_discount_10 = data['wholesale_discount_10']
-        if 'wholesale_discount_25' in data:
-            config.wholesale_discount_25 = data['wholesale_discount_25']
+        if 'wholesale_discounts_json' in data:
+            config.wholesale_discounts_json = data['wholesale_discounts_json']
         if 'payment_methods_json' in data:
             config.payment_methods_json = data['payment_methods_json']
         if 'company_name' in data:

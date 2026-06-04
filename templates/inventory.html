@@ -124,22 +124,15 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-9">
                                 <div class="form-group">
-                                    <label>{{ _('Umbral Descuento 10%') }}</label>
-                                    <input type="number" id="productDiscountThreshold5" class="form-control" min="1" value="5">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>{{ _('Umbral Descuento 15%') }}</label>
-                                    <input type="number" id="productDiscountThreshold10" class="form-control" min="1" value="10">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>{{ _('Umbral Descuento 20%') }}</label>
-                                    <input type="number" id="productDiscountThreshold25" class="form-control" min="1" value="25">
+                                    <label>{{ _('Reglas de Descuento (vacío = usar globales)') }}</label>
+                                    <div id="productDiscountsContainer">
+                                        <!-- Los descuentos se cargarán dinámicamente aquí -->
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-success mt-2" onclick="addProductDiscount()">
+                                        <i class="fas fa-plus"></i> {{ _('Agregar Regla') }}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -350,6 +343,9 @@
 document.getElementById('toggleNewProductForm').addEventListener('click', function() {
     const form = document.getElementById('newProductForm');
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    if (form.style.display === 'block') {
+        clearProductDiscounts();
+    }
 });
 
 document.getElementById('toggleNewMaterialForm').addEventListener('click', function() {
@@ -485,9 +481,7 @@ document.getElementById('saveProductBtn').addEventListener('click', async functi
         images: productImages,
         materials: materials,
         enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
-        discount_threshold_5: parseInt(document.getElementById('productDiscountThreshold5').value) || 5,
-        discount_threshold_10: parseInt(document.getElementById('productDiscountThreshold10').value) || 10,
-        discount_threshold_25: parseInt(document.getElementById('productDiscountThreshold25').value) || 25
+        quantity_discounts_json: productDiscounts.length > 0 ? JSON.stringify(productDiscounts) : null
     };
     
     if (!productData.name || !productData.slicer_weight || !productData.print_time_hours) {
@@ -585,6 +579,54 @@ function loadCategories() {
         });
 }
 
+// Product Discounts Management
+let productDiscounts = [];
+
+function renderProductDiscounts() {
+    const container = document.getElementById('productDiscountsContainer');
+    container.innerHTML = '';
+    
+    productDiscounts.forEach((discount, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="number" class="form-control" placeholder="Cantidad" value="${discount.threshold}" 
+                   onchange="updateProductDiscount(${index}, 'threshold', this.value)" min="1">
+            <input type="number" class="form-control" placeholder="%" value="${discount.discount}" 
+                   onchange="updateProductDiscount(${index}, 'discount', this.value)" min="0" max="100">
+            <div class="input-group-text">
+                <input type="checkbox" ${discount.enabled ? 'checked' : ''} 
+                       onchange="updateProductDiscount(${index}, 'enabled', this.checked)">
+            </div>
+            <div class="input-group-append">
+                <button type="button" class="btn btn-danger" onclick="removeProductDiscount(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addProductDiscount() {
+    productDiscounts.push({ threshold: '', discount: '', enabled: true });
+    renderProductDiscounts();
+}
+
+function updateProductDiscount(index, field, value) {
+    productDiscounts[index][field] = field === 'enabled' ? value : parseFloat(value);
+}
+
+function removeProductDiscount(index) {
+    productDiscounts.splice(index, 1);
+    renderProductDiscounts();
+}
+
+function clearProductDiscounts() {
+    productDiscounts = [];
+    renderProductDiscounts();
+}
+
 // Load products
 function loadProducts() {
     fetch('/api/products')
@@ -648,9 +690,18 @@ function editProduct(productId) {
             document.getElementById('productAdditional').value = product.additional_costs || 0;
             document.getElementById('productImageUrl').value = product.image_url || '';
             document.getElementById('productEnableDiscounts').value = product.enable_quantity_discounts ? 'true' : 'false';
-            document.getElementById('productDiscountThreshold5').value = product.discount_threshold_5 || 5;
-            document.getElementById('productDiscountThreshold10').value = product.discount_threshold_10 || 10;
-            document.getElementById('productDiscountThreshold25').value = product.discount_threshold_25 || 25;
+            
+            // Load product discounts
+            if (product.quantity_discounts_json) {
+                try {
+                    productDiscounts = JSON.parse(product.quantity_discounts_json);
+                } catch {
+                    productDiscounts = [];
+                }
+            } else {
+                productDiscounts = [];
+            }
+            renderProductDiscounts();
             
             // Show form
             document.getElementById('newProductForm').style.display = 'block';
@@ -689,9 +740,7 @@ async function updateProduct(productId) {
         images: productImages,
         materials: materials,
         enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
-        discount_threshold_5: parseInt(document.getElementById('productDiscountThreshold5').value) || 5,
-        discount_threshold_10: parseInt(document.getElementById('productDiscountThreshold10').value) || 10,
-        discount_threshold_25: parseInt(document.getElementById('productDiscountThreshold25').value) || 25
+        quantity_discounts_json: productDiscounts.length > 0 ? JSON.stringify(productDiscounts) : null
     };
     
     if (!productData.name || !productData.slicer_weight || !productData.print_time_hours) {

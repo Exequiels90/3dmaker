@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from datetime import datetime, timedelta
 from enum import Enum as PyEnum
 import bcrypt
+import json
 
 db = SQLAlchemy()
 
@@ -200,9 +201,7 @@ class Product(db.Model):
     image_url = db.Column(db.String(500), nullable=True)  # URL de imagen del producto
     retail_price = db.Column(db.Float, default=0.0)  # Precio minorista (precio base)
     enable_quantity_discounts = db.Column(db.Boolean, default=True)  # Habilitar descuentos por cantidad
-    discount_threshold_5 = db.Column(db.Integer, default=5)  # Umbral para descuento de 10%
-    discount_threshold_10 = db.Column(db.Integer, default=10)  # Umbral para descuento de 15%
-    discount_threshold_25 = db.Column(db.Integer, default=25)  # Umbral para descuento de 20%
+    quantity_discounts_json = db.Column(db.Text, nullable=True)  # Descuentos por cantidad personalizados (JSON)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     materials = db.relationship('ProductMaterial', backref='product', cascade='all, delete-orphan')
@@ -272,12 +271,27 @@ class Product(db.Model):
         config = GlobalConfig.get_singleton()
         discount = 0.0
         
-        if quantity >= 25:
-            discount = config.wholesale_discount_25 or 20.0
-        elif quantity >= 10:
-            discount = config.wholesale_discount_10 or 15.0
-        elif quantity >= 5:
-            discount = config.wholesale_discount_5 or 10.0
+        # Si el producto tiene descuentos personalizados, usarlos
+        if self.quantity_discounts_json:
+            try:
+                product_discounts = json.loads(self.quantity_discounts_json)
+                for rule in sorted(product_discounts, key=lambda x: x.get('threshold', 0), reverse=True):
+                    if quantity >= rule.get('threshold', 0) and rule.get('enabled', True):
+                        discount = rule.get('discount', 0)
+                        break
+            except:
+                pass
+        
+        # Si no tiene descuentos personalizados o no se encontró ninguno, usar los globales
+        if discount == 0.0 and config.wholesale_discounts_json:
+            try:
+                global_discounts = json.loads(config.wholesale_discounts_json)
+                for rule in sorted(global_discounts, key=lambda x: x.get('threshold', 0), reverse=True):
+                    if quantity >= rule.get('threshold', 0) and rule.get('enabled', True):
+                        discount = rule.get('discount', 0)
+                        break
+            except:
+                pass
         
         return round(base_price * (1 - discount / 100.0), 2)
 
@@ -402,9 +416,7 @@ class GlobalConfig(db.Model):
     labor_hour_cost = db.Column(db.Float, default=15.0)  # $ por hora de trabajo
     base_profit_margin = db.Column(db.Float, default=150.0)  # Porcentaje de ganancia base
     fail_margin_multiplier = db.Column(db.Float, default=1.05)  # Factor de recargo por riesgo
-    wholesale_discount_5 = db.Column(db.Float, default=10.0)  # Descuento para +5 unidades (%)
-    wholesale_discount_10 = db.Column(db.Float, default=15.0)  # Descuento para +10 unidades (%)
-    wholesale_discount_25 = db.Column(db.Float, default=20.0)  # Descuento para +25 unidades (%)
+    wholesale_discounts_json = db.Column(db.Text, default='[{"threshold": 5, "discount": 10, "enabled": true}, {"threshold": 10, "discount": 15, "enabled": true}, {"threshold": 25, "discount": 20, "enabled": true}]')  # Descuentos por cantidad (JSON)
     payment_methods_json = db.Column(db.Text, default='["Efectivo", "Mercado Pago", "Transferencia"]')  # Métodos de pago (JSON)
     company_name = db.Column(db.String(100), default='3D System')  # Nombre de la empresa
     company_logo_url = db.Column(db.String(500), nullable=True)  # URL del logo de la empresa
