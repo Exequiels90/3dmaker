@@ -563,6 +563,85 @@ document.getElementById('saveMaterialBtn').addEventListener('click', async funct
     }
 });
 
+// Edit Material
+async function editMaterial(materialId) {
+    try {
+        const response = await fetch(`/api/materials/${materialId}`);
+        const material = await response.json();
+        
+        document.getElementById('matBrand').value = material.brand;
+        document.getElementById('matType').value = material.type;
+        document.getElementById('matColor').value = material.color;
+        document.getElementById('matTotalWeight').value = material.total_weight;
+        document.getElementById('matCurrentWeight').value = material.current_weight;
+        document.getElementById('matPurchaseCost').value = material.purchase_cost;
+        document.getElementById('matSupplier').value = material.supplier_id || '';
+        
+        document.getElementById('newMaterialForm').style.display = 'block';
+        
+        // Change save button to update
+        const saveBtn = document.getElementById('saveMaterialBtn');
+        saveBtn.onclick = async function() {
+            const totalWeight = parseFloat(document.getElementById('matTotalWeight').value);
+            const currentWeight = parseFloat(document.getElementById('matCurrentWeight').value) || totalWeight;
+            
+            const materialData = {
+                brand: document.getElementById('matBrand').value,
+                type: document.getElementById('matType').value,
+                color: document.getElementById('matColor').value,
+                total_weight: totalWeight,
+                current_weight: currentWeight,
+                purchase_cost: parseFloat(document.getElementById('matPurchaseCost').value),
+                supplier_id: document.getElementById('matSupplier').value || null
+            };
+            
+            try {
+                const response = await fetch(`/api/materials/${materialId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(materialData)
+                });
+                
+                if (response.ok) {
+                    alert('Material actualizado exitosamente');
+                    document.getElementById('newMaterialForm').style.display = 'none';
+                    loadMaterials();
+                    // Reset save button to create
+                    saveBtn.onclick = null;
+                } else {
+                    alert('Error al actualizar material');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+// Delete Material
+async function deleteMaterial(materialId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este material?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/materials/${materialId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            alert('Material eliminado exitosamente');
+            loadMaterials();
+        } else {
+            alert('Error al eliminar material');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
 // Load categories
 function loadCategories() {
     fetch('/api/categories')
@@ -690,6 +769,15 @@ function editProduct(productId) {
             document.getElementById('productAdditional').value = product.additional_costs || 0;
             document.getElementById('productImageUrl').value = product.image_url || '';
             document.getElementById('productEnableDiscounts').value = product.enable_quantity_discounts ? 'true' : 'false';
+            
+            // Load product images
+            productImages = product.images || [];
+            renderImagesList();
+            if (productImages.length > 0) {
+                document.getElementById('imagesRow').style.display = 'block';
+            } else {
+                document.getElementById('imagesRow').style.display = 'none';
+            }
             
             // Load product discounts
             if (product.quantity_discounts_json) {
@@ -839,8 +927,14 @@ function loadMaterials() {
                         <td>${statusBadge}</td>
                         <td>$${material.cost_per_gram.toFixed(4)}/g</td>
                         <td>
+                            <button class="btn btn-sm btn-info" onclick="editMaterial(${material.id})">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
                             <button class="btn btn-sm btn-warning" onclick="logWaste(${material.id})">
-                                <i class="fas fa-trash"></i> Registrar Desperdicio
+                                <i class="fas fa-trash"></i> Desperdicio
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteMaterial(${material.id})">
+                                <i class="fas fa-times"></i> Eliminar
                             </button>
                         </td>
                     </tr>

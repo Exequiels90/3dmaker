@@ -680,6 +680,71 @@ def api_materials_create():
         return jsonify({'error': str(e)}), 400
 
 
+@main.route('/api/materials/<int:material_id>')
+def api_material_detail(material_id):
+    """Detalle de un material"""
+    material = Material.query.get_or_404(material_id)
+    
+    return jsonify({
+        'id': material.id,
+        'brand': material.brand,
+        'type': material.type,
+        'color': material.color,
+        'total_weight': material.total_weight,
+        'current_weight': material.current_weight,
+        'remaining_percent': material.remaining_percent,
+        'cost_per_gram': material.cost_per_gram,
+        'status': material.stock_status,
+        'purchase_cost': material.purchase_cost,
+        'supplier_id': material.supplier_id
+    })
+
+
+@main.route('/api/materials/<int:material_id>', methods=['PUT'])
+@login_required
+def api_materials_update(material_id):
+    """Actualizar material existente"""
+    try:
+        material = Material.query.get_or_404(material_id)
+        data = request.get_json()
+        
+        material.brand = data.get('brand', material.brand)
+        material.type = data.get('type', material.type)
+        material.color = data.get('color', material.color)
+        material.total_weight = data.get('total_weight', material.total_weight)
+        material.current_weight = data.get('current_weight', material.current_weight)
+        material.purchase_cost = data.get('purchase_cost', material.purchase_cost)
+        material.supplier_id = data.get('supplier_id', material.supplier_id)
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@main.route('/api/materials/<int:material_id>', methods=['DELETE'])
+@login_required
+def api_materials_delete(material_id):
+    """Eliminar material"""
+    try:
+        material = Material.query.get_or_404(material_id)
+        
+        # Check if material is used in any product
+        product_materials = ProductMaterial.query.filter_by(material_id=material_id).all()
+        if product_materials:
+            return jsonify({'error': 'No se puede eliminar el material porque está siendo usado en productos'}), 400
+        
+        db.session.delete(material)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
 # ==================== WASTE TRACKING ====================
 
 @main.route('/api/waste/log', methods=['POST'])
