@@ -470,7 +470,8 @@ def api_products():
         'production_cost': p.calculate_production_cost(config)['total'],
         'suggested_price': p.suggested_price,
         'image_url': p.image_url,
-        'material': p.default_material.color if p.default_material else None
+        'material': p.default_material.color if p.default_material else None,
+        'visible': p.visible
     } for p in products])
 
 
@@ -514,6 +515,7 @@ def api_products_create():
             additional_costs=data.get('additional_costs', 0),
             image_url=data.get('image_url'),
             enable_quantity_discounts=data.get('enable_quantity_discounts', True),
+            visible=data.get('visible', True),
             quantity_discounts_json=data.get('quantity_discounts_json')
         )
         
@@ -578,6 +580,7 @@ def api_products_update(product_id):
         product.additional_costs = data.get('additional_costs', product.additional_costs)
         product.image_url = data.get('image_url', product.image_url)
         product.enable_quantity_discounts = data.get('enable_quantity_discounts', product.enable_quantity_discounts)
+        product.visible = data.get('visible', product.visible)
         product.quantity_discounts_json = data.get('quantity_discounts_json')
         
         # Handle multiple materials
@@ -1439,7 +1442,7 @@ def cleanup_expired_orders():
 @main.route('/catalogo')
 def public_catalog():
     """Catálogo público para clientes"""
-    products = Product.query.all()
+    products = Product.query.filter_by(visible=True).all()
     config = GlobalConfig.get_singleton()
     
     return render_template('public_catalog.html', products=products, config=config)

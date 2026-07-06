@@ -202,6 +202,7 @@ class Product(db.Model):
     retail_price = db.Column(db.Float, default=0.0)  # Precio minorista (precio base)
     enable_quantity_discounts = db.Column(db.Boolean, default=True)  # Habilitar descuentos por cantidad
     quantity_discounts_json = db.Column(db.Text, nullable=True)  # Descuentos por cantidad personalizados (JSON)
+    visible = db.Column(db.Boolean, default=True)  # Visible en el catálogo público
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     materials = db.relationship('ProductMaterial', backref='product', cascade='all, delete-orphan')
