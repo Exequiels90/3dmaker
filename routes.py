@@ -464,14 +464,23 @@ def api_products():
     return jsonify([{
         'id': p.id,
         'name': p.name,
+        'category': p.category,
+        'description': p.description,
+        'retail_price': p.retail_price,
         'slicer_weight': p.slicer_weight,
+        'material_cost': p.material_cost,
         'print_time': p.print_time_hours,
+        'power_consumption': p.power_consumption,
         'postproc_time': p.post_process_hours,
+        'printer_id': p.default_printer_id,
+        'additional_costs': p.additional_costs,
         'production_cost': p.calculate_production_cost(config)['total'],
         'suggested_price': p.suggested_price,
         'image_url': p.image_url,
-        'material': p.default_material.color if p.default_material else None,
-        'visible': p.visible
+        'images': [img.image_url for img in p.images] if hasattr(p, 'images') else [],
+        'enable_quantity_discounts': p.enable_quantity_discounts,
+        'visible': p.visible,
+        'quantity_discounts_json': p.quantity_discounts_json
     } for p in products])
 
 

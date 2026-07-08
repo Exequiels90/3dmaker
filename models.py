@@ -230,8 +230,15 @@ class Product(db.Model):
             material_cost = (self.slicer_weight or 0.0) * (filament.cost_per_gram if filament else 0.0)
         
         # Costo de electricidad: (Watts / 1000) * Horas * $/kWh
-        # Usar power_consumption del producto si está definido, si no usar el de la impresora
-        power_watts = self.power_consumption if self.power_consumption and self.power_consumption > 0 else (printer.power_consumption if printer else 0.0)
+        # Usar power_consumption del producto si está definido, si no usar el de la impresora, si no usar valor por defecto
+        if self.power_consumption and self.power_consumption > 0:
+            power_watts = self.power_consumption
+        elif printer and printer.power_consumption:
+            power_watts = printer.power_consumption
+        else:
+            # Valor por defecto si no hay impresora ni consumo específico
+            power_watts = 300.0  # 300 Watts por defecto para impresoras 3D típicas
+        
         electricity_cost = (power_watts / 1000.0) * \
                           (self.print_time_hours or 0.0) * \
                           (config.kwh_cost if config else 0.1)
