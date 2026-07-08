@@ -142,26 +142,6 @@
             border: 1px solid rgba(0, 212, 255, 0.3) !important;
             color: #00d4ff !important;
         }
-        .cart-badge {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
-            color: #0a0a0a;
-            padding: 18px 30px;
-            border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
-            cursor: pointer;
-            z-index: 9999;
-            display: block !important;
-            font-weight: 600;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
-        }
-        .cart-badge:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.6);
-        }
         .cart-count {
             background: #ff4444;
             color: white;
@@ -302,7 +282,7 @@
                         <i class="fab fa-instagram"></i>
                     </a>
                     {% endif %}
-                    <a href="#" class="navbar-icon cart-badge-custom" data-bs-toggle="modal" data-bs-target="#cartModal">
+                    <a href="#" class="navbar-icon cart-badge-custom" onclick="showCartModal(); return false;">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
                     </a>

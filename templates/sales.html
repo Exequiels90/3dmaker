@@ -100,7 +100,7 @@
                                             <select class="form-select form-select-sm product-select" required>
                                                 <option value="">{{ _('-- Seleccionar --') }}</option>
                                                 {% for product in products %}
-                                                <option value="{{ product.id }}" data-cost="{{ product.calculate_production_cost(config)['total'] }}" data-suggested="{{ product.suggested_price }}">
+                                                <option value="{{ product.id }}" data-cost="{{ product.calculate_production_cost(config)['total'] }}" data-suggested="{{ product.retail_price if product.retail_price and product.retail_price > 0 else product.suggested_price }}">
                                                     {{ product.name }}
                                                 </option>
                                                 {% endfor %}

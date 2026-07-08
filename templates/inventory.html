@@ -437,7 +437,7 @@ function loadProducts() {
                         <td>${product.print_time.toFixed(2)}h</td>
                         <td>${product.material || '--'}</td>
                         <td>$${product.production_cost.toFixed(2)}</td>
-                        <td><strong>$${product.suggested_price.toFixed(2)}</strong></td>
+                        <td><strong>$${(product.retail_price && product.retail_price > 0 ? product.retail_price : product.suggested_price).toFixed(2)}</strong></td>
                         <td>
                             <button class="btn btn-sm btn-info" onclick="showCostBreakdown(${product.id}, '${product.name}')">
                                 <i class="fas fa-chart-pie"></i> Desglose
