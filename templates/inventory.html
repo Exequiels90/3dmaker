@@ -289,6 +289,15 @@ function removeImage(index) {
 
 // Save Product
 document.getElementById('saveProductBtn').addEventListener('click', async function() {
+    const productId = this.getAttribute('data-product-id');
+    if (productId) {
+        await updateProduct(productId);
+    } else {
+        await saveProduct();
+    }
+});
+
+async function saveProduct() {
     const productData = {
         name: document.getElementById('productName').value,
         category: document.getElementById('productCategory').value || 'General',
@@ -498,10 +507,8 @@ function editProduct(productId) {
             // Show form
             document.getElementById('newProductForm').style.display = 'block';
             
-            // Store product ID for update
-            document.getElementById('saveProductBtn').onclick = async function() {
-                await updateProduct(productId);
-            };
+            // Set product ID for update mode
+            document.getElementById('saveProductBtn').setAttribute('data-product-id', productId);
         });
 }
 
@@ -545,7 +552,9 @@ async function updateProduct(productId) {
             document.getElementById('productDescription').value = '';
             document.getElementById('productRetailPrice').value = '';
             document.getElementById('productWeight').value = '';
+            document.getElementById('productMaterialCost').value = '';
             document.getElementById('productPrintTime').value = '';
+            document.getElementById('productPowerConsumption').value = '';
             document.getElementById('productPostTime').value = '';
             document.getElementById('productPrinter').value = '';
             document.getElementById('productAdditional').value = '';
@@ -555,9 +564,7 @@ async function updateProduct(productId) {
             document.getElementById('imagesRow').style.display = 'none';
             
             // Reset save button to create mode
-            document.getElementById('saveProductBtn').onclick = async function() {
-                await saveProduct();
-            };
+            document.getElementById('saveProductBtn').removeAttribute('data-product-id');
             
             loadProducts();
         } else {
