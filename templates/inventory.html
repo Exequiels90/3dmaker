@@ -61,10 +61,25 @@
                                     <input type="number" id="productRetailPrice" class="form-control" min="0" step="0.01" placeholder="{{ _('0 = precio sugerido') }}">
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label>{{ _('Peso Laminado (gramos) *') }}</label>
                                     <input type="number" id="productWeight" class="form-control" min="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>{{ _('Costo Laminado ($) (opcional)') }}</label>
+                                    <input type="number" id="productMaterialCost" class="form-control" min="0" step="0.01" placeholder="0 = calcular desde gramos">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>{{ _('Tiempo de Impresión (horas) *') }}</label>
+                                    <input type="number" id="productPrintTime" class="form-control" min="0" step="0.1" required>
                                 </div>
                             </div>
                         </div>
@@ -72,8 +87,8 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>{{ _('Tiempo de Impresión (horas) *') }}</label>
-                                    <input type="number" id="productPrintTime" class="form-control" min="0" step="0.1" required>
+                                    <label>{{ _('Consumo Energía (Watts) (opcional)') }}</label>
+                                    <input type="number" id="productPowerConsumption" class="form-control" min="0" step="1" placeholder="0 = usar impresora">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -82,7 +97,7 @@
                                     <input type="number" id="productPostTime" class="form-control" min="0" step="0.1" value="0">
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>{{ _('Impresora') }}</label>
                                     <select id="productPrinter" class="form-select">
@@ -91,13 +106,16 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>{{ _('Costos Adicionales ($)') }}</label>
                                     <input type="number" id="productAdditional" class="form-control" min="0" step="0.01" value="0">
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label>{{ _('URL de Imagen') }}</label>
                                     <input type="text" id="productImageUrl" class="form-control" placeholder="https://...">
@@ -106,16 +124,16 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>{{ _('Habilitar Descuentos por Cantidad') }}</label>
+                                    <label>{{ _('Habilitar Descuentos') }}</label>
                                     <select id="productEnableDiscounts" class="form-control">
                                         <option value="true">{{ _('Sí') }}</option>
                                         <option value="false">{{ _('No') }}</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>{{ _('Visible en Catálogo') }}</label>
                                     <select id="productVisible" class="form-control">
@@ -124,7 +142,10 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <label>{{ _('Reglas de Descuento (vacío = usar globales)') }}</label>
                                     <div id="productDiscountsContainer">
@@ -135,6 +156,7 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
                         </div>
                         
                         <div class="row" id="imagesRow" style="display: none;">
@@ -273,7 +295,9 @@ document.getElementById('saveProductBtn').addEventListener('click', async functi
         description: document.getElementById('productDescription').value || null,
         retail_price: parseFloat(document.getElementById('productRetailPrice').value) || 0,
         slicer_weight: parseFloat(document.getElementById('productWeight').value),
+        material_cost: parseFloat(document.getElementById('productMaterialCost').value) || 0,
         print_time_hours: parseFloat(document.getElementById('productPrintTime').value),
+        power_consumption: parseFloat(document.getElementById('productPowerConsumption').value) || 0,
         post_process_hours: parseFloat(document.getElementById('productPostTime').value),
         printer_id: document.getElementById('productPrinter').value || null,
         additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
@@ -440,7 +464,9 @@ function editProduct(productId) {
             document.getElementById('productDescription').value = product.description || '';
             document.getElementById('productRetailPrice').value = product.retail_price || 0;
             document.getElementById('productWeight').value = product.slicer_weight;
+            document.getElementById('productMaterialCost').value = product.material_cost || 0;
             document.getElementById('productPrintTime').value = product.print_time;
+            document.getElementById('productPowerConsumption').value = product.power_consumption || 0;
             document.getElementById('productPostTime').value = product.postproc_time || 0;
             document.getElementById('productPrinter').value = product.printer_id || '';
             document.getElementById('productAdditional').value = product.additional_costs || 0;
@@ -487,7 +513,9 @@ async function updateProduct(productId) {
         description: document.getElementById('productDescription').value || null,
         retail_price: parseFloat(document.getElementById('productRetailPrice').value) || 0,
         slicer_weight: parseFloat(document.getElementById('productWeight').value),
+        material_cost: parseFloat(document.getElementById('productMaterialCost').value) || 0,
         print_time_hours: parseFloat(document.getElementById('productPrintTime').value),
+        power_consumption: parseFloat(document.getElementById('productPowerConsumption').value) || 0,
         post_process_hours: parseFloat(document.getElementById('productPostTime').value),
         printer_id: document.getElementById('productPrinter').value || null,
         additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
