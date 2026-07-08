@@ -508,7 +508,9 @@ def api_products_create():
             description=data.get('description'),
             retail_price=data.get('retail_price', 0),
             slicer_weight=data.get('slicer_weight', 0),
+            material_cost=data.get('material_cost', 0),
             print_time_hours=data.get('print_time_hours', 0),
+            power_consumption=data.get('power_consumption', 0),
             post_process_hours=data.get('post_process_hours', 0),
             default_material_id=data.get('material_id'),
             default_printer_id=data.get('printer_id'),
@@ -573,7 +575,9 @@ def api_products_update(product_id):
         product.description = data.get('description', product.description)
         product.retail_price = data.get('retail_price', product.retail_price)
         product.slicer_weight = data.get('slicer_weight', product.slicer_weight)
+        product.material_cost = data.get('material_cost', product.material_cost)
         product.print_time_hours = data.get('print_time_hours', product.print_time_hours)
+        product.power_consumption = data.get('power_consumption', product.power_consumption)
         product.post_process_hours = data.get('post_process_hours', product.post_process_hours)
         product.default_material_id = data.get('material_id', product.default_material_id)
         product.default_printer_id = data.get('printer_id', product.default_printer_id)

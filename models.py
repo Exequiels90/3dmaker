@@ -193,10 +193,12 @@ class Product(db.Model):
     description = db.Column(db.Text, nullable=True)  # Descripción para el catálogo
     category = db.Column(db.String(100), nullable=True, default='General')  # Categoría del producto
     slicer_weight = db.Column(db.Float, default=0.0, nullable=False)  # Gramos según laminador (legacy, se calcula desde ProductMaterial)
+    material_cost = db.Column(db.Float, default=0.0)  # Costo directo del laminado ($)
     print_time_hours = db.Column(db.Float, default=0.0, nullable=False)  # Formato decimal
     post_process_hours = db.Column(db.Float, default=0.0, nullable=False)  # Horas de trabajo manual
     default_material_id = db.Column(db.Integer, db.ForeignKey('material.id'), nullable=True)  # Legacy para compatibilidad
     default_printer_id = db.Column(db.Integer, db.ForeignKey('printer.id'), nullable=True)
+    power_consumption = db.Column(db.Float, default=0.0)  # Consumo de energía en Watts (si no usa el de la impresora)
     additional_costs = db.Column(db.Float, default=0.0)  # Tornillos, imanes, packaging, etc.
     image_url = db.Column(db.String(500), nullable=True)  # URL de imagen del producto
     retail_price = db.Column(db.Float, default=0.0)  # Precio minorista (precio base)
@@ -217,8 +219,10 @@ class Product(db.Model):
         
         printer = self.default_printer
         
-        # Costo de filamento - soporte multi-material
-        if self.materials:
+        # Costo de filamento - usar costo directo si está definido, si no usar materiales legacy
+        if self.material_cost and self.material_cost > 0:
+            material_cost = self.material_cost
+        elif self.materials:
             material_cost = sum(pm.weight_grams * (pm.material.cost_per_gram if pm.material else 0.0) for pm in self.materials)
         else:
             # Fallback a legacy default_material
@@ -226,7 +230,9 @@ class Product(db.Model):
             material_cost = (self.slicer_weight or 0.0) * (filament.cost_per_gram if filament else 0.0)
         
         # Costo de electricidad: (Watts / 1000) * Horas * $/kWh
-        electricity_cost = ((printer.power_consumption if printer else 0.0) / 1000.0) * \
+        # Usar power_consumption del producto si está definido, si no usar el de la impresora
+        power_watts = self.power_consumption if self.power_consumption and self.power_consumption > 0 else (printer.power_consumption if printer else 0.0)
+        electricity_cost = (power_watts / 1000.0) * \
                           (self.print_time_hours or 0.0) * \
                           (config.kwh_cost if config else 0.1)
         
