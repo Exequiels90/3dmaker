@@ -117,7 +117,7 @@
                         </li>
                         
                         <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link {% if 'inventory' in request.path or 'expenses' in request.path %}active{% endif %}">
+                            <a href="#" class="nav-link {% if 'inventory' in request.path or 'expenses' in request.path or 'categories' in request.path %}active{% endif %}">
                                 <i class="nav-icon fas fa-boxes"></i>
                                 <p>
                                     {{ _('Inventario') }}
@@ -126,7 +126,7 @@
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="{{ url_for('main.inventory') }}" class="nav-link {% if 'inventory' in request.path and 'expenses' not in request.path %}active{% endif %}">
+                                    <a href="{{ url_for('main.inventory') }}" class="nav-link {% if 'inventory' in request.path and 'expenses' not in request.path and 'categories' not in request.path %}active{% endif %}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>{{ _('Inventario') }}</p>
                                     </a>
@@ -135,6 +135,12 @@
                                     <a href="{{ url_for('main.expenses') }}" class="nav-link {% if 'expenses' in request.path %}active{% endif %}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>{{ _('Expenses') }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.categories_page') }}" class="nav-link {% if 'categories' in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Categorías') }}</p>
                                     </a>
                                 </li>
                             </ul>

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for, Response, session
 from flask_login import login_user, logout_user, login_required, current_user
 from models import (db, Product, Material, Printer, GlobalConfig, Order, OrderItem, 
-                    Customer, WasteLog, MaintenanceLog, Supplier, ProductMaterial, Expense, User, CustomerOrder, ProductImage)
+                    Customer, WasteLog, MaintenanceLog, Supplier, ProductMaterial, Expense, User, CustomerOrder, ProductImage, Category)
 from datetime import datetime, timedelta
 from sqlalchemy import func, extract
 import json
@@ -1399,6 +1399,14 @@ def expenses():
     expenses = Expense.query.order_by(Expense.date.desc()).all()
     materials = Material.query.all()
     return render_template('expenses.html', expenses=expenses, materials=materials)
+
+
+@main.route('/categories')
+@login_required
+def categories_page():
+    """Página de gestión de categorías"""
+    categories = Category.query.all()
+    return render_template('categories.html', categories=categories)
 
 
 @main.route('/api/expenses')

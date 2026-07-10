@@ -298,9 +298,12 @@ document.getElementById('saveProductBtn').addEventListener('click', async functi
 });
 
 async function saveProduct() {
+    const categoryValue = document.getElementById('productCategory').value || 'General';
+    console.log('Category value being sent:', categoryValue);
+    
     const productData = {
         name: document.getElementById('productName').value,
-        category: document.getElementById('productCategory').value || 'General',
+        category: categoryValue,
         description: document.getElementById('productDescription').value || null,
         retail_price: parseFloat(document.getElementById('productRetailPrice').value) || 0,
         slicer_weight: parseFloat(document.getElementById('productWeight').value),

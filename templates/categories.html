@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ _('Categorías') }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ _('Categorías de Productos') }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-tags mr-2"></i> {{ _('Gestión de Categorías') }}
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>{{ _('Categorías Disponibles') }}</label>
+                                <div id="categoriesContainer">
+                                    <!-- Las categorías se cargarán dinámicamente aquí -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-success mt-2" onclick="addCategory()">
+                                    <i class="fas fa-plus"></i> {{ _('Agregar Categoría') }}
+                                </button>
+                                <small class="text-muted">{{ _('Agregue las categorías de productos que ofrece') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load categories on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+});
+
+function loadCategories() {
+    fetch('/api/categories')
+        .then(r => r.json())
+        .then(categories => {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+            
+            categories.forEach(cat => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'input-group mb-2';
+                categoryDiv.innerHTML = `
+                    <input type="text" class="form-control" value="${cat.name}" 
+                           onchange="updateCategory(${cat.id}, this.value)">
+                    <div class="input-group-append">
+                        <button class="btn btn-danger" onclick="deleteCategory(${cat.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(categoryDiv);
+            });
+        })
+        .catch(err => console.error('Error loading categories:', err));
+}
+
+function addCategory() {
+    const categoryName = prompt('{{ _('Nombre de la nueva categoría:') }}');
+    if (categoryName && categoryName.trim()) {
+        fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: categoryName.trim() })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                loadCategories();
+            } else {
+                alert('{{ _('Error al crear categoría:') }} ' + data.message);
+            }
+        })
+        .catch(err => console.error('Error creating category:', err));
+    }
+}
+
+function updateCategory(categoryId, newName) {
+    if (newName && newName.trim()) {
+        fetch(`/api/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName.trim() })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                alert('{{ _('Error al actualizar categoría:') }} ' + data.message);
+                loadCategories();
+            }
+        })
+        .catch(err => console.error('Error updating category:', err));
+    }
+}
+
+function deleteCategory(categoryId) {
+    if (confirm('{{ _('¿Está seguro de eliminar esta categoría?') }}')) {
+        fetch(`/api/categories/${categoryId}`, {
+            method: 'DELETE'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                loadCategories();
+            } else {
+                alert('{{ _('Error al eliminar categoría:') }} ' + data.message);
+            }
+        })
+        .catch(err => console.error('Error deleting category:', err));
+    }
+}
+</script>
+{% endblock %}
