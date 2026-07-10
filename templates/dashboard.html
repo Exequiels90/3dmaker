@@ -11,10 +11,26 @@
         <div class="small-box bg-info">
             <div class="inner">
                 <h3>${{ '%.2f'|format(monthly_revenue) }}</h3>
-                <p>{{ _('Ingresos Mensuales') }}</p>
+                <p>{{ _('Ingresos del Mes') }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-dollar-sign"></i>
+            </div>
+            <a href="{{ url_for('main.sales') }}" class="small-box-footer">
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Monthly Growth -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box {% if monthly_growth >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+            <div class="inner">
+                <h3>{% if monthly_growth >= 0 %}+{% endif %}{{ '%.1f'|format(monthly_growth) }}%</h3>
+                <p>{{ _('Crecimiento Mensual') }}</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chart-line"></i>
             </div>
             <a href="{{ url_for('main.sales') }}" class="small-box-footer">
                 {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
@@ -53,7 +69,10 @@
             </a>
         </div>
     </div>
-    
+</div>
+
+<!-- Second KPIs Row -->
+<div class="row mt-3">
     <!-- Filament Stock -->
     <div class="col-lg-3 col-6">
         <div class="small-box bg-warning">
@@ -84,6 +103,38 @@
                 {% if low_stock_count > 0 %}{{ low_stock_count }} {{ _('stock bajo') }} {% endif %}
                 {% if maintenance_count > 0 %}{{ maintenance_count }} {{ _('mantenimiento necesario') }}{% endif %}
                 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Total Orders -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ total_orders }}</h3>
+                <p>{{ _('Órdenes del Mes') }}</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <a href="{{ url_for('main.sales') }}" class="small-box-footer">
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Average Order Value -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>${{ '%.2f'|format(average_order_value) }}</h3>
+                <p>{{ _('Valor Promedio de Orden') }}</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <a href="{{ url_for('main.sales') }}" class="small-box-footer">
+                {{ _('More info') }} <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
@@ -145,9 +196,21 @@
     </div>
 </div>
 
-<!-- Waste Trends Chart Row -->
+<!-- Sales by Category Chart Row -->
 <div class="row">
-    <div class="col-lg-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Ventas por Categoría (Últimos 12 Meses)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="salesByCategoryChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Waste Trends Chart -->
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">
@@ -155,7 +218,63 @@
                 </h3>
             </div>
             <div class="card-body">
-                <canvas id="chartWasteTrends" style="max-height: 400px;"></canvas>
+                <canvas id="chartWasteTrends" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Sales Trends Chart Row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Tendencias de Ventas Semanales (Últimas 12 Semanas)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklySalesTrendsChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Projection Chart Row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Proyección de Ventas (Basado en Últimos 6 Meses)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="salesProjectionChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Year Over Year Comparison Chart Row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Comparación Año vs Año</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="yearOverYearChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Profit Margin Chart Row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Margen de Ganancia por Producto (Top 10 - Últimos 12 Meses)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="productProfitMarginChart" style="height: 300px;"></canvas>
             </div>
         </div>
     </div>
@@ -198,6 +317,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     loadRevenueVsCostsChart();
     loadProductSalesChart();
+    loadSalesByCategoryChart();
+    loadWeeklySalesTrendsChart();
+    loadSalesProjectionChart();
+    loadYearOverYearChart();
+    loadProductProfitMarginChart();
     loadWasteTrendsChart();
     loadProductSelector();
 });
@@ -207,6 +331,11 @@ let chartRevenueVsCosts = null;
 let chartWasteTrends = null;
 let chartCostBreakdown = null;
 let chartProductSales = null;
+let chartSalesByCategory = null;
+let chartWeeklySalesTrends = null;
+let chartSalesProjection = null;
+let chartYearOverYear = null;
+let chartProductProfitMargin = null;
 
 // Load Revenue vs Costs Chart
 function loadRevenueVsCostsChart() {
@@ -299,6 +428,336 @@ function loadProductSalesChart() {
             });
         })
         .catch(err => console.error('Error loading product sales chart:', err));
+}
+
+// Load Sales by Category Chart
+function loadSalesByCategoryChart() {
+    fetch('/api/chart/sales-by-category')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('salesByCategoryChart');
+            if (!canvas) {
+                console.error('Canvas element not found: salesByCategoryChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartSalesByCategory) chartSalesByCategory.destroy();
+            chartSalesByCategory = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ventas por Categoría',
+                        data: data.revenues,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading sales by category chart:', err));
+}
+
+// Load Weekly Sales Trends Chart
+function loadWeeklySalesTrendsChart() {
+    fetch('/api/chart/weekly-sales-trends')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('weeklySalesTrendsChart');
+            if (!canvas) {
+                console.error('Canvas element not found: weeklySalesTrendsChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartWeeklySalesTrends) chartWeeklySalesTrends.destroy();
+            chartWeeklySalesTrends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ingresos Semanales',
+                        data: data.revenues,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ingresos ($)' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading weekly sales trends chart:', err));
+}
+
+// Load Sales Projection Chart
+function loadSalesProjectionChart() {
+    fetch('/api/chart/sales-projection')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('salesProjectionChart');
+            if (!canvas) {
+                console.error('Canvas element not found: salesProjectionChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartSalesProjection) chartSalesProjection.destroy();
+            
+            // Combine historical and projection data
+            const allLabels = [...data.historical_labels, ...data.projection_labels];
+            const allRevenues = [...data.historical_revenues, ...data.projection_revenues];
+            
+            // Create dataset styling arrays
+            const backgroundColors = data.historical_revenues.map(() => 'rgba(54, 162, 235, 0.2)');
+            const borderColors = data.historical_revenues.map(() => 'rgba(54, 162, 235, 1)');
+            
+            // Add projection styling
+            const projectionCount = data.projection_revenues.length;
+            for (let i = 0; i < projectionCount; i++) {
+                backgroundColors.push('rgba(255, 99, 132, 0.2)');
+                borderColors.push('rgba(255, 99, 132, 1)');
+            }
+            
+            chartSalesProjection = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: [{
+                        label: 'Ventas Históricas y Proyectadas',
+                        data: allRevenues,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: borderColors,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const isProjection = index >= data.historical_revenues.length;
+                                    const label = isProjection ? 'Proyectado' : 'Histórico';
+                                    return `${label}: $${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: data.historical_labels.length - 0.5,
+                                    xMax: data.historical_labels.length - 0.5,
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5]
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ingresos ($)' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading sales projection chart:', err));
+}
+
+// Load Year Over Year Chart
+function loadYearOverYearChart() {
+    fetch('/api/chart/year-over-year')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('yearOverYearChart');
+            if (!canvas) {
+                console.error('Canvas element not found: yearOverYearChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartYearOverYear) chartYearOverYear.destroy();
+            
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const lastYear = currentYear - 1;
+            
+            chartYearOverYear = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: `${lastYear}`,
+                            data: data.last_year,
+                            backgroundColor: 'rgba(201, 203, 207, 0.7)',
+                            borderColor: 'rgba(201, 203, 207, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: `${currentYear}`,
+                            data: data.current_year,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ingresos ($)' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading year over year chart:', err));
+}
+
+// Load Product Profit Margin Chart
+function loadProductProfitMarginChart() {
+    fetch('/api/chart/product-profit-margin')
+        .then(r => r.json())
+        .then(data => {
+            const canvas = document.getElementById('productProfitMarginChart');
+            if (!canvas) {
+                console.error('Canvas element not found: productProfitMarginChart');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            if (chartProductProfitMargin) chartProductProfitMargin.destroy();
+            
+            chartProductProfitMargin = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Ganancia ($)',
+                            data: data.profits,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Margen (%)',
+                            data: data.margins,
+                            type: 'line',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return `Ganancia: $${context.parsed.y.toFixed(2)}`;
+                                    } else {
+                                        return `Margen: ${context.parsed.y.toFixed(1)}%`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Ganancia ($)' },
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Margen (%)' },
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error loading product profit margin chart:', err));
 }
 
 // Load Waste Trends Chart

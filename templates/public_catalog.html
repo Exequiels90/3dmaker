@@ -282,6 +282,11 @@
                         <i class="fab fa-instagram"></i>
                     </a>
                     {% endif %}
+                    {% if config and config.whatsapp_url %}
+                    <a href="{{ config.whatsapp_url }}" target="_blank" class="navbar-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                    {% endif %}
                     <a href="#" class="navbar-icon cart-badge-custom" onclick="showCartModal(); return false;">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
@@ -322,7 +327,7 @@
                         <div class="carousel-inner">
                             {% for img in product.images|sort(attribute='sort_order') %}
                             <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                <img src="{{ img.image_url }}" alt="{{ product.name }}">
+                                <img src="{{ img.image_url }}" alt="{{ product.name }}" onclick="openLightbox('{{ img.image_url }}')" style="cursor: pointer;">
                             </div>
                             {% endfor %}
                         </div>
@@ -334,7 +339,7 @@
                         </button>
                     </div>
                     {% elif product.image_url %}
-                    <div class="product-image">
+                    <div class="product-image" onclick="openLightbox('{{ product.image_url }}')" style="cursor: pointer;">
                         <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
                     </div>
                     {% else %}
@@ -423,6 +428,20 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancelar') }}</button>
                     <button type="button" class="btn btn-success" onclick="submitOrder()">{{ _('Enviar Orden') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Lightbox Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="lightboxImage" src="" alt="" style="max-width: 100%; max-height: 90vh; object-fit: contain;">
                 </div>
             </div>
         </div>
@@ -563,6 +582,11 @@
             cart = cart.filter(item => item.product_id !== productId);
             updateCartBadge();
             showCartModal();
+        }
+        
+        function openLightbox(imageUrl) {
+            document.getElementById('lightboxImage').src = imageUrl;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
         
         function showOrderForm() {

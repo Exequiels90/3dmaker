@@ -359,13 +359,22 @@ function loadCategories() {
         .then(r => r.json())
         .then(categories => {
             const select = document.getElementById('productCategory');
-            select.innerHTML = '';
+            // Keep the default "General" option
+            select.innerHTML = '<option value="General">General</option>';
             categories.forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat.name;
                 option.textContent = cat.name;
                 select.appendChild(option);
             });
+        })
+        .catch(err => {
+            console.error('Error loading categories:', err);
+            // Keep the default option if there's an error
+            const select = document.getElementById('productCategory');
+            if (select.innerHTML === '') {
+                select.innerHTML = '<option value="General">General</option>';
+            }
         });
 }
 

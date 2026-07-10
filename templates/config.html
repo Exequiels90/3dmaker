@@ -90,6 +90,13 @@
                         <small class="text-muted">{{ _('URL de tu perfil de Instagram') }}</small>
                     </div>
                     
+                    <div class="form-group">
+                        <label for="whatsappUrl">{{ _('URL de WhatsApp') }}</label>
+                        <input type="text" id="whatsappUrl" class="form-control" 
+                               value="{{ config.whatsapp_url or '' }}" placeholder="https://wa.me/...">
+                        <small class="text-muted">{{ _('URL de tu WhatsApp (ej: https://wa.me/5491112345678)') }}</small>
+                    </div>
+                    
                     <hr>
                     
                     <h5 class="mt-3">{{ _('Métodos de Pago') }}</h5>
@@ -435,7 +442,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 payment_methods_json: JSON.stringify(paymentMethods),
                 company_name: document.getElementById('companyName').value,
                 company_logo_url: document.getElementById('companyLogoUrl').value,
-                instagram_url: document.getElementById('instagramUrl').value
+                instagram_url: document.getElementById('instagramUrl').value,
+                whatsapp_url: document.getElementById('whatsappUrl').value
             };
             
             try {

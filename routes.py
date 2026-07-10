@@ -81,6 +81,27 @@ def dashboard():
     printers_needing_maintenance = [p for p in Printer.query.all() if p.needs_maintenance]
     total_alerts = len(low_stock_materials) + len(printers_needing_maintenance)
     
+    # KPI 5: Monthly growth percentage
+    last_month_date = now - timedelta(days=30)
+    last_month_start = datetime(last_month_date.year, last_month_date.month, 1)
+    last_month_end = datetime(now.year, now.month, 1)
+    
+    last_month_orders = Order.query.filter(
+        Order.date >= last_month_start,
+        Order.date < last_month_end,
+        Order.status != 'Cancelled'
+    ).all()
+    
+    last_month_revenue = sum(o.total_amount_billed or 0.0 for o in last_month_orders)
+    
+    if last_month_revenue > 0:
+        monthly_growth = ((monthly_revenue - last_month_revenue) / last_month_revenue) * 100
+    else:
+        monthly_growth = 0 if monthly_revenue == 0 else 100
+    
+    # KPI 6: Average order value
+    average_order_value = monthly_revenue / orders_count if orders_count > 0 else 0
+    
     context = {
         'monthly_revenue': round(monthly_revenue, 2),
         'orders_count': orders_count,
@@ -91,6 +112,9 @@ def dashboard():
         'low_stock_count': len(low_stock_materials),
         'maintenance_count': len(printers_needing_maintenance),
         'low_stock_materials': low_stock_materials,
+        'monthly_growth': round(monthly_growth, 1),
+        'total_orders': orders_count,
+        'average_order_value': round(average_order_value, 2),
         'config': config
     }
     
@@ -257,6 +281,325 @@ def api_chart_product_sales():
         'labels': [p[0] for p in sorted_products],
         'quantities': [p[1]['quantity'] for p in sorted_products],
         'revenues': [p[1]['revenue'] for p in sorted_products]
+    })
+
+
+@main.route('/api/chart/sales-by-category')
+def api_chart_sales_by_category():
+    """API endpoint para gráfico de ventas por categoría"""
+    now = datetime.utcnow()
+    twelve_months_ago = now - timedelta(days=365)
+    
+    # Query all order items in the last 12 months
+    order_items = OrderItem.query.join(Order).join(Product).filter(
+        Order.date >= twelve_months_ago,
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Aggregate sales by category
+    category_sales = {}
+    for item in order_items:
+        category = item.product.category if item.product else 'General'
+        if category not in category_sales:
+            category_sales[category] = {'quantity': 0, 'revenue': 0}
+        category_sales[category]['quantity'] += item.quantity
+        category_sales[category]['revenue'] += item.quantity * item.unit_price_sold
+    
+    return jsonify({
+        'labels': list(category_sales.keys()),
+        'quantities': [category_sales[cat]['quantity'] for cat in category_sales],
+        'revenues': [category_sales[cat]['revenue'] for cat in category_sales]
+    })
+
+
+@main.route('/api/chart/weekly-sales-trends')
+def api_chart_weekly_sales_trends():
+    """API endpoint para gráfico de tendencias de ventas semanales"""
+    now = datetime.utcnow()
+    # Get data for the last 12 weeks
+    twelve_weeks_ago = now - timedelta(weeks=12)
+    
+    # Query all orders in the last 12 weeks
+    orders = Order.query.filter(
+        Order.date >= twelve_weeks_ago,
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Aggregate sales by week
+    weekly_sales = {}
+    for order in orders:
+        # Get the week number (year-week format)
+        week_key = order.date.strftime('%Y-W%U')
+        if week_key not in weekly_sales:
+            weekly_sales[week_key] = {'revenue': 0, 'quantity': 0}
+        for item in order.items:
+            weekly_sales[week_key]['revenue'] += item.quantity * item.unit_price_sold
+            weekly_sales[week_key]['quantity'] += item.quantity
+    
+    # Sort by week
+    sorted_weeks = sorted(weekly_sales.items())
+    
+    return jsonify({
+        'labels': [week[0] for week in sorted_weeks],
+        'revenues': [weekly_sales[week[0]]['revenue'] for week in sorted_weeks],
+        'quantities': [weekly_sales[week[0]]['quantity'] for week in sorted_weeks]
+    })
+
+
+@main.route('/api/chart/sales-projection')
+def api_chart_sales_projection():
+    """API endpoint para proyección de ventas basada en datos históricos"""
+    now = datetime.utcnow()
+    # Get data for the last 6 months for projection
+    six_months_ago = now - timedelta(days=180)
+    
+    # Query all orders in the last 6 months
+    orders = Order.query.filter(
+        Order.date >= six_months_ago,
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Aggregate sales by month
+    monthly_sales = {}
+    for order in orders:
+        month_key = order.date.strftime('%Y-%m')
+        if month_key not in monthly_sales:
+            monthly_sales[month_key] = {'revenue': 0, 'quantity': 0}
+        for item in order.items:
+            monthly_sales[month_key]['revenue'] += item.quantity * item.unit_price_sold
+            monthly_sales[month_key]['quantity'] += item.quantity
+    
+    # Sort by month
+    sorted_months = sorted(monthly_sales.items())
+    
+    # Calculate average monthly revenue for projection
+    if len(sorted_months) > 0:
+        avg_monthly_revenue = sum(month[1]['revenue'] for month in sorted_months) / len(sorted_months)
+        avg_monthly_quantity = sum(month[1]['quantity'] for month in sorted_months) / len(sorted_months)
+    else:
+        avg_monthly_revenue = 0
+        avg_monthly_quantity = 0
+    
+    # Project next 3 months
+    projection_months = []
+    projection_revenues = []
+    projection_quantities = []
+    
+    for i in range(1, 4):
+        future_date = now + timedelta(days=30 * i)
+        future_month = future_date.strftime('%Y-%m')
+        projection_months.append(future_month)
+        projection_revenues.append(avg_monthly_revenue)
+        projection_quantities.append(avg_monthly_quantity)
+    
+    return jsonify({
+        'historical_labels': [month[0] for month in sorted_months],
+        'historical_revenues': [monthly_sales[month[0]]['revenue'] for month in sorted_months],
+        'historical_quantities': [monthly_sales[month[0]]['quantity'] for month in sorted_months],
+        'projection_labels': projection_months,
+        'projection_revenues': projection_revenues,
+        'projection_quantities': projection_quantities,
+        'average_monthly_revenue': avg_monthly_revenue
+    })
+
+
+@main.route('/api/chart/year-over-year')
+def api_chart_year_over_year():
+    """API endpoint para comparación año vs año"""
+    now = datetime.utcnow()
+    current_year = now.year
+    last_year = current_year - 1
+    
+    # Get data for current year
+    current_year_orders = Order.query.filter(
+        Order.date >= datetime(current_year, 1, 1),
+        Order.date <= datetime(current_year, 12, 31),
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Get data for last year
+    last_year_orders = Order.query.filter(
+        Order.date >= datetime(last_year, 1, 1),
+        Order.date <= datetime(last_year, 12, 31),
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Aggregate by month for current year
+    current_year_monthly = {}
+    for order in current_year_orders:
+        month_key = order.date.strftime('%m')
+        if month_key not in current_year_monthly:
+            current_year_monthly[month_key] = {'revenue': 0, 'quantity': 0}
+        for item in order.items:
+            current_year_monthly[month_key]['revenue'] += item.quantity * item.unit_price_sold
+            current_year_monthly[month_key]['quantity'] += item.quantity
+    
+    # Aggregate by month for last year
+    last_year_monthly = {}
+    for order in last_year_orders:
+        month_key = order.date.strftime('%m')
+        if month_key not in last_year_monthly:
+            last_year_monthly[month_key] = {'revenue': 0, 'quantity': 0}
+        for item in order.items:
+            last_year_monthly[month_key]['revenue'] += item.quantity * item.unit_price_sold
+            last_year_monthly[month_key]['quantity'] += item.quantity
+    
+    # Create arrays for all months (1-12)
+    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+    month_names = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    
+    current_year_data = [current_year_monthly.get(m, {'revenue': 0})['revenue'] for m in months]
+    last_year_data = [last_year_monthly.get(m, {'revenue': 0})['revenue'] for m in months]
+    
+    # Calculate growth percentage
+    growth_data = []
+    for i in range(12):
+        if last_year_data[i] > 0:
+            growth = ((current_year_data[i] - last_year_data[i]) / last_year_data[i]) * 100
+        else:
+            growth = 0 if current_year_data[i] == 0 else 100
+        growth_data.append(growth)
+    
+    return jsonify({
+        'months': month_names,
+        'current_year': current_year_data,
+        'last_year': last_year_data,
+        'growth': growth_data,
+        'current_year_total': sum(current_year_data),
+        'last_year_total': sum(last_year_data)
+    })
+
+
+@main.route('/api/chart/monthly-growth')
+def api_chart_monthly_growth():
+    """API endpoint para análisis de crecimiento mensual"""
+    now = datetime.utcnow()
+    current_month = now.strftime('%Y-%m')
+    last_month = (now - timedelta(days=30)).strftime('%Y-%m')
+    
+    # Get data for current month
+    current_month_orders = Order.query.filter(
+        Order.date >= datetime(now.year, now.month, 1),
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Get data for last month
+    last_month_date = now - timedelta(days=30)
+    last_month_orders = Order.query.filter(
+        Order.date >= datetime(last_month_date.year, last_month_date.month, 1),
+        Order.date < datetime(now.year, now.month, 1),
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Calculate current month revenue
+    current_month_revenue = sum(
+        item.quantity * item.unit_price_sold
+        for order in current_month_orders
+        for item in order.items
+    )
+    
+    # Calculate last month revenue
+    last_month_revenue = sum(
+        item.quantity * item.unit_price_sold
+        for order in last_month_orders
+        for item in order.items
+    )
+    
+    # Calculate growth percentage
+    if last_month_revenue > 0:
+        growth_percentage = ((current_month_revenue - last_month_revenue) / last_month_revenue) * 100
+    else:
+        growth_percentage = 0 if current_month_revenue == 0 else 100
+    
+    # Get last 6 months for trend
+    six_months_ago = now - timedelta(days=180)
+    monthly_trend = {}
+    
+    for i in range(6):
+        month_date = now - timedelta(days=30 * i)
+        month_key = month_date.strftime('%Y-%m')
+        month_orders = Order.query.filter(
+            Order.date >= datetime(month_date.year, month_date.month, 1),
+            Order.date < datetime(month_date.year, month_date.month, 1) + timedelta(days=32),
+            Order.status != 'Cancelled'
+        ).all()
+        
+        monthly_revenue = sum(
+            item.quantity * item.unit_price_sold
+            for order in month_orders
+            for item in order.items
+        )
+        monthly_trend[month_key] = monthly_revenue
+    
+    # Sort by month
+    sorted_trend = sorted(monthly_trend.items(), reverse=True)
+    
+    return jsonify({
+        'current_month': current_month,
+        'current_month_revenue': current_month_revenue,
+        'last_month': last_month,
+        'last_month_revenue': last_month_revenue,
+        'growth_percentage': growth_percentage,
+        'trend_labels': [month[0] for month in sorted_trend],
+        'trend_revenues': [monthly_trend[month[0]] for month in sorted_trend]
+    })
+
+
+@main.route('/api/chart/product-profit-margin')
+def api_chart_product_profit_margin():
+    """API endpoint para gráfico de margen de ganancia por producto"""
+    now = datetime.utcnow()
+    twelve_months_ago = now - timedelta(days=365)
+    
+    # Query all order items in the last 12 months
+    order_items = OrderItem.query.join(Order).filter(
+        Order.date >= twelve_months_ago,
+        Order.status != 'Cancelled'
+    ).all()
+    
+    # Aggregate by product
+    product_data = {}
+    for item in order_items:
+        if not item.product:
+            continue
+        product_id = item.product.id
+        product_name = item.product.name
+        
+        if product_id not in product_data:
+            product_data[product_id] = {
+                'name': product_name,
+                'revenue': 0,
+                'cost': 0,
+                'quantity': 0
+            }
+        
+        product_data[product_id]['revenue'] += item.quantity * item.unit_price_sold
+        product_data[product_id]['cost'] += item.quantity * item.unit_production_cost_snapshot
+        product_data[product_id]['quantity'] += item.quantity
+    
+    # Calculate profit margins
+    product_margins = []
+    for product_id, data in product_data.items():
+        if data['revenue'] > 0:
+            profit = data['revenue'] - data['cost']
+            margin_percentage = (profit / data['revenue']) * 100
+            product_margins.append({
+                'name': data['name'],
+                'revenue': data['revenue'],
+                'cost': data['cost'],
+                'profit': profit,
+                'margin_percentage': margin_percentage,
+                'quantity': data['quantity']
+            })
+    
+    # Sort by profit and take top 10
+    sorted_products = sorted(product_margins, key=lambda x: x['profit'], reverse=True)[:10]
+    
+    return jsonify({
+        'labels': [p['name'] for p in sorted_products],
+        'profits': [p['profit'] for p in sorted_products],
+        'margins': [p['margin_percentage'] for p in sorted_products],
+        'revenues': [p['revenue'] for p in sorted_products]
     })
 
 
@@ -1308,6 +1651,8 @@ def api_config_update():
             config.company_logo_url = data['company_logo_url']
         if 'instagram_url' in data:
             config.instagram_url = data['instagram_url']
+        if 'whatsapp_url' in data:
+            config.whatsapp_url = data['whatsapp_url']
         
         db.session.commit()
         

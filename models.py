@@ -435,6 +435,7 @@ class GlobalConfig(db.Model):
     company_name = db.Column(db.String(100), default='3D System')  # Nombre de la empresa
     company_logo_url = db.Column(db.String(500), nullable=True)  # URL del logo de la empresa
     instagram_url = db.Column(db.String(500), nullable=True)  # URL de Instagram
+    whatsapp_url = db.Column(db.String(500), nullable=True)  # URL de WhatsApp
     
     @classmethod
     def get_singleton(cls):
