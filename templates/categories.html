@@ -75,7 +75,7 @@ function loadCategories() {
 }
 
 function addCategory() {
-    const categoryName = prompt('{{ _('Nombre de la nueva categoría:') }}');
+    const categoryName = prompt('Nombre de la nueva categoría:');
     if (categoryName && categoryName.trim()) {
         fetch('/api/categories', {
             method: 'POST',
@@ -87,7 +87,7 @@ function addCategory() {
             if (data.success) {
                 loadCategories();
             } else {
-                alert('{{ _('Error al crear categoría:') }} ' + data.message);
+                alert('Error al crear categoría: ' + data.message);
             }
         })
         .catch(err => console.error('Error creating category:', err));
@@ -104,7 +104,7 @@ function updateCategory(categoryId, newName) {
         .then(r => r.json())
         .then(data => {
             if (!data.success) {
-                alert('{{ _('Error al actualizar categoría:') }} ' + data.message);
+                alert('Error al actualizar categoría: ' + data.message);
                 loadCategories();
             }
         })
@@ -113,7 +113,7 @@ function updateCategory(categoryId, newName) {
 }
 
 function deleteCategory(categoryId) {
-    if (confirm('{{ _('¿Está seguro de eliminar esta categoría?') }}')) {
+    if (confirm('¿Está seguro de eliminar esta categoría?')) {
         fetch(`/api/categories/${categoryId}`, {
             method: 'DELETE'
         })
@@ -122,7 +122,7 @@ function deleteCategory(categoryId) {
             if (data.success) {
                 loadCategories();
             } else {
-                alert('{{ _('Error al eliminar categoría:') }} ' + data.message);
+                alert('Error al eliminar categoría: ' + data.message);
             }
         })
         .catch(err => console.error('Error deleting category:', err));
