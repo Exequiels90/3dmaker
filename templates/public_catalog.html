@@ -449,7 +449,53 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Convert Google Drive and OneDrive sharing links to direct image links
+        function convertToDirectImageUrl(url) {
+            if (!url) return url;
+            
+            // Google Drive: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+            // Direct: https://lh3.googleusercontent.com/d/FILE_ID
+            if (url.includes('drive.google.com/file/d/')) {
+                const match = url.match(/\/file\/d\/([^\/]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            
+            // OneDrive: https://1drv.ms/u/s!FILE_ID
+            // Direct: https://1drv.ms/i/s!FILE_ID (change /u/ to /i/)
+            if (url.includes('1drv.ms/u/')) {
+                return url.replace('/u/', '/i/');
+            }
+            
+            // OneDrive: https://1drv.ms/b/s!FILE_ID
+            // Direct: https://1drv.ms/i/s!FILE_ID (change /b/ to /i/)
+            if (url.includes('1drv.ms/b/')) {
+                return url.replace('/b/', '/i/');
+            }
+            
+            return url;
+        }
+        
         let cart = [];
+        
+        // Convert all image URLs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const productImages = document.querySelectorAll('.product-image img');
+            productImages.forEach(img => {
+                if (img.src) {
+                    img.src = convertToDirectImageUrl(img.src);
+                }
+            });
+            
+            // Also convert carousel images
+            const carouselImages = document.querySelectorAll('.carousel-item img');
+            carouselImages.forEach(img => {
+                if (img.src) {
+                    img.src = convertToDirectImageUrl(img.src);
+                }
+            });
+        });
         
         function filterProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -585,7 +631,7 @@
         }
         
         function openLightbox(imageUrl) {
-            document.getElementById('lightboxImage').src = imageUrl;
+            document.getElementById('lightboxImage').src = convertToDirectImageUrl(imageUrl);
             new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
         

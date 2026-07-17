@@ -230,6 +230,34 @@
 </div>
 
 <script>
+// Convert Google Drive and OneDrive sharing links to direct image links
+function convertToDirectImageUrl(url) {
+    if (!url) return url;
+    
+    // Google Drive: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+    // Direct: https://lh3.googleusercontent.com/d/FILE_ID
+    if (url.includes('drive.google.com/file/d/')) {
+        const match = url.match(/\/file\/d\/([^\/]+)/);
+        if (match && match[1]) {
+            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+    }
+    
+    // OneDrive: https://1drv.ms/u/s!FILE_ID
+    // Direct: https://1drv.ms/i/s!FILE_ID (change /u/ to /i/)
+    if (url.includes('1drv.ms/u/')) {
+        return url.replace('/u/', '/i/');
+    }
+    
+    // OneDrive: https://1drv.ms/b/s!FILE_ID
+    // Direct: https://1drv.ms/i/s!FILE_ID (change /b/ to /i/)
+    if (url.includes('1drv.ms/b/')) {
+        return url.replace('/b/', '/i/');
+    }
+    
+    return url;
+}
+
 // Toggle forms
 document.getElementById('toggleNewProductForm').addEventListener('click', function() {
     const form = document.getElementById('newProductForm');
@@ -437,8 +465,9 @@ function loadProducts() {
             const tbody = document.getElementById('productsBody');
             tbody.innerHTML = '';
             products.forEach(product => {
-                const imageHtml = product.image_url ? 
-                    `<img src="${product.image_url}" style="height:40px; width:40px; object-fit:cover; border-radius:4px;" alt="${product.name}">` : 
+                const imageUrl = convertToDirectImageUrl(product.image_url);
+                const imageHtml = imageUrl ? 
+                    `<img src="${imageUrl}" style="height:40px; width:40px; object-fit:cover; border-radius:4px;" alt="${product.name}">` : 
                     '<span class="text-muted">Sin imagen</span>';
                 
                 const row = `
