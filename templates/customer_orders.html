@@ -24,6 +24,7 @@
                                 <th>{{ _('Teléfono') }}</th>
                                 <th>{{ _('Total') }}</th>
                                 <th>{{ _('Estado') }}</th>
+                                <th>{{ _('Seguimiento') }}</th>
                                 <th>{{ _('Fecha') }}</th>
                                 <th>{{ _('Acciones') }}</th>
                             </tr>
@@ -37,16 +38,32 @@
                                 <td>{{ order.customer_phone }}</td>
                                 <td>${{ order.total_amount }}</td>
                                 <td>
-                                    <span class="badge badge-{% if order.status == 'Pending' %}warning{% elif order.status == 'Confirmed' %}success{% elif order.status == 'Cancelled' %}danger{% else %}secondary{% endif %}">
+                                    <span class="badge badge-{% if order.status == 'Pendiente' %}warning{% elif order.status == 'Confirmada' %}success{% elif order.status == 'Cancelada' %}danger{% else %}secondary{% endif %}">
                                         {{ order.status }}
                                     </span>
+                                </td>
+                                <td>
+                                    {% if order.status == 'Cancelada' %}
+                                        <span class="badge badge-danger">{{ _('Cancelado') }}</span>
+                                    {% else %}
+                                    <select class="form-control form-control-sm tracking-select" data-order-id="{{ order.id }}" onchange="updateTrackingStatus({{ order.id }}, this.value)" style="max-width: 170px;">
+                                        {% for step in ['Recibido', 'En cola', 'Imprimiendo', 'Listo para retirar', 'Entregado'] %}
+                                        <option value="{{ step }}" {% if order.tracking_status == step %}selected{% endif %}>{{ step }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if order.tracking_code %}
+                                    <a href="{{ url_for('main.track_order', code=order.tracking_code) }}" target="_blank" class="d-block small mt-1" title="{{ _('Ver como lo ve el cliente') }}">
+                                        <i class="fas fa-arrow-up-right-from-square"></i> {{ _('Link de seguimiento') }}
+                                    </a>
+                                    {% endif %}
+                                    {% endif %}
                                 </td>
                                 <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td>
                                     <button class="btn btn-sm btn-info" onclick="viewOrderDetails({{ order.id }})">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    {% if order.status == 'Pending' %}
+                                    {% if order.status == 'Pendiente' %}
                                     <button class="btn btn-sm btn-success" onclick="confirmOrder({{ order.id }})">
                                         <i class="fas fa-check"></i>
                                     </button>
@@ -99,9 +116,25 @@ let currentOrderId = null;
 
 $(document).ready(function() {
     $('#customerOrdersTable').DataTable({
-        "order": [[6, "desc"]]
+        "order": [[7, "desc"]],
+        "columnDefs": [{ "orderable": false, "targets": [6, 8] }]
     });
 });
+
+function updateTrackingStatus(orderId, newStatus) {
+    fetch(`/api/customer-orders/${orderId}/tracking-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tracking_status: newStatus })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
 
 function viewOrderDetails(orderId) {
     currentOrderId = orderId;

@@ -92,13 +92,100 @@
                     
                     <div class="form-group">
                         <label for="whatsappUrl">{{ _('URL de WhatsApp') }}</label>
-                        <input type="text" id="whatsappUrl" class="form-control" 
+                        <input type="text" id="whatsappUrl" class="form-control"
                                value="{{ config.whatsapp_url or '' }}" placeholder="https://wa.me/...">
                         <small class="text-muted">{{ _('URL de tu WhatsApp (ej: https://wa.me/5491112345678)') }}</small>
                     </div>
-                    
+
                     <hr>
-                    
+
+                    <h5 class="mt-3"><i class="fab fa-telegram text-info mr-1"></i> {{ _('Aviso de pedidos por Telegram') }}</h5>
+                    <p class="text-muted small mb-3">
+                        {{ _('Recibí un mensaje en Telegram cada vez que llega un pedido nuevo desde el catálogo, sin tener que revisar el panel.') }}
+                    </p>
+
+                    <div class="custom-control custom-switch mb-3">
+                        <input type="checkbox" class="custom-control-input" id="telegramEnabled"
+                               {% if config.telegram_notify_enabled %}checked{% endif %}>
+                        <label class="custom-control-label" for="telegramEnabled">{{ _('Activar avisos por Telegram') }}</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telegramBotToken">{{ _('Token del Bot de Telegram') }}</label>
+                        <input type="text" id="telegramBotToken" class="form-control"
+                               value="{{ config.telegram_bot_token or '' }}" placeholder="123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                        <small class="text-muted">
+                            {{ _('Lo obtenés hablando con') }} <strong>@BotFather</strong> {{ _('en Telegram (comando /newbot).') }}
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telegramChatId">{{ _('Chat ID') }}</label>
+                        <input type="text" id="telegramChatId" class="form-control"
+                               value="{{ config.telegram_chat_id or '' }}" placeholder="123456789">
+                        <small class="text-muted">
+                            {{ _('El ID de tu chat o grupo. Podés obtenerlo hablándole a') }} <strong>@userinfobot</strong>.
+                        </small>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-info" id="testTelegramBtn">
+                        <i class="fab fa-telegram-plane mr-1"></i> {{ _('Enviar mensaje de prueba') }}
+                    </button>
+                    <span id="telegramTestResult" class="ml-2 small"></span>
+
+                    <hr>
+
+                    <h5 class="mt-3"><i class="fas fa-database text-secondary mr-1"></i> {{ _('Backup automático de la base de datos') }}</h5>
+                    <p class="text-muted small mb-3">
+                        {{ _('Recibí por email una copia de la base de datos, para no perder todo si algo falla. Usa una cuenta de Gmail para enviarlo.') }}
+                    </p>
+
+                    <div class="custom-control custom-switch mb-3">
+                        <input type="checkbox" class="custom-control-input" id="backupEnabled"
+                               {% if config.backup_enabled %}checked{% endif %}>
+                        <label class="custom-control-label" for="backupEnabled">{{ _('Activar backup automático') }}</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backupEmailTo">{{ _('Email donde recibir el backup') }}</label>
+                        <input type="email" id="backupEmailTo" class="form-control"
+                               value="{{ config.backup_email_to or '' }}" placeholder="tu-email@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backupSmtpUser">{{ _('Cuenta de Gmail remitente') }}</label>
+                        <input type="email" id="backupSmtpUser" class="form-control"
+                               value="{{ config.backup_smtp_user or '' }}" placeholder="remitente@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backupSmtpPassword">{{ _('Contraseña de aplicación de Gmail') }}</label>
+                        <input type="password" id="backupSmtpPassword" class="form-control"
+                               value="{{ config.backup_smtp_password or '' }}" placeholder="xxxx xxxx xxxx xxxx">
+                        <small class="text-muted">
+                            {{ _('No es tu contraseña normal de Gmail. Se genera en') }}
+                            <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a>
+                            {{ _('(necesitás tener la verificación en 2 pasos activada).') }}
+                        </small>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="testBackupBtn">
+                        <i class="fas fa-paper-plane mr-1"></i> {{ _('Enviar backup de prueba ahora') }}
+                    </button>
+                    <span id="backupTestResult" class="ml-2 small"></span>
+                    {% if config.backup_last_sent_at %}
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-clock mr-1"></i> {{ _('Último backup enviado') }}: {{ config.backup_last_sent_at.strftime('%Y-%m-%d %H:%M') }} UTC
+                    </div>
+                    {% endif %}
+                    <div class="alert alert-light border small mt-3 mb-0">
+                        <i class="fas fa-circle-info mr-1"></i>
+                        {{ _('Para que se envíe solo, sin que tengas que apretar el botón, hay que programarlo una vez desde la pestaña "Tasks" de PythonAnywhere para que corra') }}
+                        <code>python3 /home/tuusuario/3dmaker/backup.py</code> {{ _('una vez por semana. Detalles en GUIA_USO.md.') }}
+                    </div>
+
+                    <hr>
+
                     <h5 class="mt-3">{{ _('Métodos de Pago') }}</h5>
                     
                     <div class="form-group">
@@ -443,7 +530,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 company_name: document.getElementById('companyName').value,
                 company_logo_url: document.getElementById('companyLogoUrl').value,
                 instagram_url: document.getElementById('instagramUrl').value,
-                whatsapp_url: document.getElementById('whatsappUrl').value
+                whatsapp_url: document.getElementById('whatsappUrl').value,
+                telegram_bot_token: document.getElementById('telegramBotToken').value.trim(),
+                telegram_chat_id: document.getElementById('telegramChatId').value.trim(),
+                telegram_notify_enabled: document.getElementById('telegramEnabled').checked,
+                backup_email_to: document.getElementById('backupEmailTo').value.trim(),
+                backup_smtp_user: document.getElementById('backupSmtpUser').value.trim(),
+                backup_smtp_password: document.getElementById('backupSmtpPassword').value,
+                backup_enabled: document.getElementById('backupEnabled').checked
             };
             
             try {
@@ -463,7 +557,98 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
+    // Telegram test button
+    const testTelegramBtn = document.getElementById('testTelegramBtn');
+    if (testTelegramBtn) {
+        testTelegramBtn.addEventListener('click', async function() {
+            const resultSpan = document.getElementById('telegramTestResult');
+            const botToken = document.getElementById('telegramBotToken').value.trim();
+            const chatId = document.getElementById('telegramChatId').value.trim();
+
+            if (!botToken || !chatId) {
+                resultSpan.className = 'ml-2 small text-danger';
+                resultSpan.textContent = 'Completá el token y el Chat ID, y guardá los cambios primero.';
+                return;
+            }
+
+            testTelegramBtn.disabled = true;
+            resultSpan.className = 'ml-2 small text-muted';
+            resultSpan.textContent = 'Guardando y enviando...';
+
+            try {
+                // Guarda el token/chat id actuales antes de probar, para que el test use lo que hay en pantalla
+                await fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_bot_token: botToken, telegram_chat_id: chatId })
+                });
+
+                const response = await fetch('/api/config/test-telegram', { method: 'POST' });
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultSpan.className = 'ml-2 small text-success';
+                    resultSpan.textContent = '✓ Mensaje enviado. Revisá tu Telegram.';
+                } else {
+                    resultSpan.className = 'ml-2 small text-danger';
+                    resultSpan.textContent = result.error || 'No se pudo enviar el mensaje.';
+                }
+            } catch (err) {
+                resultSpan.className = 'ml-2 small text-danger';
+                resultSpan.textContent = 'Error: ' + err.message;
+            } finally {
+                testTelegramBtn.disabled = false;
+            }
+        });
+    }
+
+    // Backup test button
+    const testBackupBtn = document.getElementById('testBackupBtn');
+    if (testBackupBtn) {
+        testBackupBtn.addEventListener('click', async function() {
+            const resultSpan = document.getElementById('backupTestResult');
+            const emailTo = document.getElementById('backupEmailTo').value.trim();
+            const smtpUser = document.getElementById('backupSmtpUser').value.trim();
+            const smtpPassword = document.getElementById('backupSmtpPassword').value;
+
+            if (!emailTo || !smtpUser || !smtpPassword) {
+                resultSpan.className = 'ml-2 small text-danger';
+                resultSpan.textContent = 'Completá el email de destino, la cuenta de Gmail y la contraseña de aplicación.';
+                return;
+            }
+
+            testBackupBtn.disabled = true;
+            resultSpan.className = 'ml-2 small text-muted';
+            resultSpan.textContent = 'Guardando y enviando (puede tardar unos segundos)...';
+
+            try {
+                // Guarda los datos actuales antes de probar, para que el test use lo que hay en pantalla
+                await fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ backup_email_to: emailTo, backup_smtp_user: smtpUser, backup_smtp_password: smtpPassword })
+                });
+
+                const response = await fetch('/api/config/test-backup', { method: 'POST' });
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultSpan.className = 'ml-2 small text-success';
+                    resultSpan.textContent = '✓ Backup enviado. Revisá el email.';
+                } else {
+                    resultSpan.className = 'ml-2 small text-danger';
+                    resultSpan.textContent = result.error || 'No se pudo enviar el backup.';
+                }
+            } catch (err) {
+                resultSpan.className = 'ml-2 small text-danger';
+                resultSpan.textContent = 'Error: ' + err.message;
+            } finally {
+                testBackupBtn.disabled = false;
+            }
+        });
+    }
+
     // Printer Form
     const togglePrinterForm = document.getElementById('togglePrinterForm');
     if (togglePrinterForm) {

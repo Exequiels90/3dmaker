@@ -26,6 +26,9 @@
                     <button class="btn btn-success" id="toggleNewProductForm">
                         <i class="fas fa-plus mr-2"></i> {{ _('Agregar Nuevo Producto') }}
                     </button>
+                    <a href="{{ url_for('main.quick_add_product') }}" class="btn btn-warning">
+                        <i class="fas fa-mobile-alt mr-2"></i> {{ _('Carga rápida desde el celular') }}
+                    </a>
                     <a href="/catalogo/export" class="btn btn-info" target="_blank">
                         <i class="fas fa-download mr-2"></i> {{ _('Exportar Catálogo') }}
                     </a>
@@ -122,6 +125,13 @@
                                     <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="addImage()">
                                         <i class="fas fa-plus"></i> {{ _('Agregar') }}
                                     </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>{{ _('URL de Video (opcional)') }}</label>
+                                    <input type="text" id="productVideoUrl" class="form-control" placeholder="Drive o YouTube">
+                                    <small class="text-muted">{{ _('Aparece con un botón "Ver video" en el catálogo') }}</small>
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -342,6 +352,7 @@ async function saveProduct() {
         printer_id: document.getElementById('productPrinter').value || null,
         additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
         image_url: productImages.length > 0 ? productImages[0] : document.getElementById('productImageUrl').value || null,
+        video_url: document.getElementById('productVideoUrl').value.trim() || null,
         images: productImages,
         enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
         visible: document.getElementById('productVisible').value === 'true',
@@ -372,6 +383,7 @@ async function saveProduct() {
             document.getElementById('productPrinter').value = '';
             document.getElementById('productAdditional').value = '';
             document.getElementById('productImageUrl').value = '';
+            document.getElementById('productVideoUrl').value = '';
             productImages = [];
             document.getElementById('imagesList').innerHTML = '';
             document.getElementById('imagesRow').style.display = 'none';
@@ -521,6 +533,7 @@ function editProduct(productId) {
             document.getElementById('productPrinter').value = product.printer_id || '';
             document.getElementById('productAdditional').value = product.additional_costs || 0;
             document.getElementById('productImageUrl').value = product.image_url || '';
+            document.getElementById('productVideoUrl').value = product.video_url || '';
             document.getElementById('productEnableDiscounts').value = product.enable_quantity_discounts ? 'true' : 'false';
             document.getElementById('productVisible').value = product.visible !== false ? 'true' : 'false';
             
@@ -568,6 +581,7 @@ async function updateProduct(productId) {
         printer_id: document.getElementById('productPrinter').value || null,
         additional_costs: parseFloat(document.getElementById('productAdditional').value) || 0,
         image_url: productImages.length > 0 ? productImages[0] : document.getElementById('productImageUrl').value || null,
+        video_url: document.getElementById('productVideoUrl').value.trim() || null,
         images: productImages,
         enable_quantity_discounts: document.getElementById('productEnableDiscounts').value === 'true',
         visible: document.getElementById('productVisible').value === 'true',
@@ -600,6 +614,7 @@ async function updateProduct(productId) {
             document.getElementById('productPrinter').value = '';
             document.getElementById('productAdditional').value = '';
             document.getElementById('productImageUrl').value = '';
+            document.getElementById('productVideoUrl').value = '';
             productImages = [];
             document.getElementById('imagesList').innerHTML = '';
             document.getElementById('imagesRow').style.display = 'none';

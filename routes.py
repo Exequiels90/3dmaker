@@ -1,12 +1,201 @@
-from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for, Response, session
+from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for, Response, session, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
-from models import (db, Product, Material, Printer, GlobalConfig, Order, OrderItem, 
-                    Customer, WasteLog, MaintenanceLog, Supplier, ProductMaterial, Expense, User, CustomerOrder, ProductImage, Category)
+from werkzeug.utils import secure_filename
+from models import (db, Product, Material, Printer, GlobalConfig, Order, OrderItem,
+                    Customer, WasteLog, MaintenanceLog, Supplier, ProductMaterial, Expense, User, CustomerOrder, ProductImage, Category, QuoteRequest)
+from extensions import limiter
 from datetime import datetime, timedelta
 from sqlalchemy import func, extract
 import json
+import requests
+import os
+import uuid
 
 main = Blueprint('main', __name__)
+
+QUOTE_UPLOAD_SUBDIR = os.path.join('instance', 'uploads', 'quotes')
+ALLOWED_QUOTE_EXTENSIONS = {'.stl', '.obj', '.3mf', '.step', '.stp', '.jpg', '.jpeg', '.png', '.pdf'}
+MAX_QUOTE_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+def _quote_upload_dir():
+    """Directorio absoluto donde se guardan los archivos de cotización (se crea si no existe)."""
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(basedir, QUOTE_UPLOAD_SUBDIR)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+# ==================== TELEGRAM NOTIFICATIONS ====================
+
+def send_telegram_message(text, config=None, force=False):
+    """Envía un mensaje de texto por Telegram usando el bot configurado.
+    No lanza excepciones: si falla (token/chat_id mal cargados, sin internet,
+    Telegram caído, etc.) sólo lo deja registrado en consola para no romper
+    el flujo de creación de pedidos. `force=True` ignora el interruptor de
+    notificaciones activas (se usa para el botón de "enviar prueba")."""
+    try:
+        config = config or GlobalConfig.get_singleton()
+        if not config:
+            return False
+        if not force and not config.telegram_notify_enabled:
+            return False
+        if not config.telegram_bot_token or not config.telegram_chat_id:
+            return False
+
+        url = f"https://api.telegram.org/bot{config.telegram_bot_token}/sendMessage"
+        payload = {
+            'chat_id': config.telegram_chat_id,
+            'text': text,
+            'parse_mode': 'HTML',
+            'disable_web_page_preview': True
+        }
+        response = requests.post(url, json=payload, timeout=8)
+        if response.status_code != 200:
+            print(f"⚠️ Telegram respondió {response.status_code}: {response.text}")
+            return False
+        return True
+    except Exception as e:
+        print(f"⚠️ No se pudo enviar la notificación de Telegram: {e}")
+        return False
+
+
+def notify_new_customer_order(customer_order):
+    """Arma y envía el mensaje de aviso de un pedido nuevo desde el catálogo."""
+    try:
+        items = customer_order.items if hasattr(customer_order, 'items') else json.loads(customer_order.items_json)
+        lines = []
+        for item in items:
+            name = item.get('name', 'Producto')
+            qty = item.get('quantity', 1)
+            unit_price = item.get('unit_price', 0)
+            lines.append(f"• {name} x{qty} — ${unit_price:.2f}" if isinstance(unit_price, (int, float)) else f"• {name} x{qty}")
+        items_text = "\n".join(lines) if lines else "(sin detalle)"
+
+        text = (
+            f"🛎️ <b>¡Nuevo pedido en el catálogo!</b>\n\n"
+            f"👤 <b>Cliente:</b> {customer_order.customer_name}\n"
+            f"📞 <b>Teléfono:</b> {customer_order.customer_phone}\n"
+        )
+        if customer_order.customer_email:
+            text += f"✉️ <b>Email:</b> {customer_order.customer_email}\n"
+        text += (
+            f"\n🧾 <b>Pedido #{customer_order.id}</b>\n{items_text}\n\n"
+            f"💰 <b>Total:</b> ${customer_order.total_amount:.2f}\n"
+            f"⏳ Vence en 48hs si no se confirma."
+        )
+        send_telegram_message(text)
+    except Exception as e:
+        print(f"⚠️ No se pudo armar la notificación de Telegram del pedido: {e}")
+
+
+def send_telegram_document(file_path, caption='', config=None, force=False):
+    """Envía un archivo (ej: STL de una cotización) directo al Telegram del dueño.
+    Igual que send_telegram_message, nunca lanza excepciones."""
+    try:
+        config = config or GlobalConfig.get_singleton()
+        if not config:
+            return False
+        if not force and not config.telegram_notify_enabled:
+            return False
+        if not config.telegram_bot_token or not config.telegram_chat_id:
+            return False
+        if not os.path.exists(file_path):
+            return False
+
+        url = f"https://api.telegram.org/bot{config.telegram_bot_token}/sendDocument"
+        with open(file_path, 'rb') as f:
+            files = {'document': f}
+            data = {'chat_id': config.telegram_chat_id, 'caption': caption[:1024], 'parse_mode': 'HTML'}
+            response = requests.post(url, data=data, files=files, timeout=20)
+        if response.status_code != 200:
+            print(f"⚠️ Telegram (documento) respondió {response.status_code}: {response.text}")
+            return False
+        return True
+    except Exception as e:
+        print(f"⚠️ No se pudo enviar el archivo por Telegram: {e}")
+        return False
+
+
+def notify_new_quote_request(quote):
+    """Arma y envía el aviso de una solicitud de cotización nueva."""
+    try:
+        text = (
+            f"🧩 <b>¡Nueva solicitud de cotización!</b>\n\n"
+            f"👤 <b>Cliente:</b> {quote.customer_name}\n"
+            f"📞 <b>Teléfono:</b> {quote.customer_phone}\n"
+        )
+        if quote.customer_email:
+            text += f"✉️ <b>Email:</b> {quote.customer_email}\n"
+        text += f"\n📝 <b>Descripción:</b>\n{quote.description}\n\n📦 <b>Cantidad:</b> {quote.quantity}\n"
+        if quote.reference_link:
+            text += f"🔗 <b>Referencia:</b> {quote.reference_link}\n"
+        text += f"\n🔖 Cotización #{quote.id}"
+
+        if quote.file_path:
+            full_path = os.path.join(_quote_upload_dir(), quote.file_path)
+            sent_with_file = send_telegram_document(full_path, caption=text)
+            if sent_with_file:
+                return
+        send_telegram_message(text)
+    except Exception as e:
+        print(f"⚠️ No se pudo armar la notificación de Telegram de la cotización: {e}")
+
+
+def _generate_tracking_code():
+    """Genera un código corto único (no adivinable) para el link público de seguimiento."""
+    code = uuid.uuid4().hex[:10].upper()
+    while CustomerOrder.query.filter_by(tracking_code=code).first() is not None:
+        code = uuid.uuid4().hex[:10].upper()
+    return code
+
+
+TRACKING_STEPS = ['Recibido', 'En cola', 'Imprimiendo', 'Listo para retirar', 'Entregado']
+
+
+def send_backup_email(config=None, force=False):
+    """Envía la base de datos (so.sqlite) por email como respaldo.
+    Pensado para ejecutarse desde un Scheduled Task de PythonAnywhere (backup.py)
+    o manualmente desde el botón de prueba en Configuración. Usa Gmail SMTP con
+    una contraseña de aplicación. No lanza excepciones: siempre devuelve (ok, mensaje)."""
+    import smtplib
+    from email.message import EmailMessage
+    try:
+        config = config or GlobalConfig.get_singleton()
+        if not config:
+            return False, 'No hay configuración cargada'
+        if not force and not config.backup_enabled:
+            return False, 'El backup automático está desactivado'
+        if not config.backup_email_to or not config.backup_smtp_user or not config.backup_smtp_password:
+            return False, 'Faltan completar los datos de email para el backup (destino, cuenta y contraseña de aplicación)'
+
+        db_uri = current_app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        db_path = db_uri.replace('sqlite:///', '', 1)
+        if not db_path or not os.path.exists(db_path):
+            return False, 'No se encontró el archivo de la base de datos'
+
+        msg = EmailMessage()
+        msg['Subject'] = f"Backup {config.company_name or 'Taller 3D'} - {datetime.utcnow().strftime('%Y-%m-%d')}"
+        msg['From'] = config.backup_smtp_user
+        msg['To'] = config.backup_email_to
+        msg.set_content('Backup automático de la base de datos adjunto. Guardalo en un lugar seguro.')
+
+        with open(db_path, 'rb') as f:
+            msg.add_attachment(
+                f.read(), maintype='application', subtype='octet-stream',
+                filename=f"backup_{datetime.utcnow().strftime('%Y%m%d_%H%M')}.sqlite"
+            )
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as smtp:
+            smtp.login(config.backup_smtp_user, config.backup_smtp_password)
+            smtp.send_message(msg)
+
+        config.backup_last_sent_at = datetime.utcnow()
+        db.session.commit()
+        return True, 'Backup enviado correctamente'
+    except Exception as e:
+        print(f"⚠️ No se pudo enviar el backup por email: {e}")
+        return False, str(e)
 
 
 # ==================== LANGUAGE ====================
@@ -791,11 +980,19 @@ def inventory():
     products = Product.query.all()
     materials = Material.query.all()
     config = GlobalConfig.get_singleton()
-    
-    return render_template('inventory.html', 
-                          products=products, 
+
+    return render_template('inventory.html',
+                          products=products,
                           materials=materials,
                           config=config)
+
+
+@main.route('/cargar-producto')
+@login_required
+def quick_add_product():
+    """Pantalla simple y mobile-first para cargar productos rápido desde el celular."""
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('quick_add.html', categories=categories)
 
 
 @main.route('/api/products')
@@ -820,6 +1017,7 @@ def api_products():
         'production_cost': p.calculate_production_cost(config)['total'],
         'suggested_price': p.suggested_price,
         'image_url': p.image_url,
+        'video_url': p.video_url,
         'images': [img.image_url for img in p.images] if hasattr(p, 'images') else [],
         'enable_quantity_discounts': p.enable_quantity_discounts,
         'visible': p.visible,
@@ -849,11 +1047,12 @@ def api_product_detail(product_id):
 
 
 @main.route('/api/products/create', methods=['POST'])
+@login_required
 def api_products_create():
     """Crear nuevo producto"""
     try:
         data = request.get_json()
-        
+
         product = Product(
             name=data['name'],
             category=data.get('category', 'General'),
@@ -868,6 +1067,7 @@ def api_products_create():
             default_printer_id=data.get('printer_id'),
             additional_costs=data.get('additional_costs', 0),
             image_url=data.get('image_url'),
+            video_url=data.get('video_url') or None,
             enable_quantity_discounts=data.get('enable_quantity_discounts', True),
             visible=data.get('visible', True),
             quantity_discounts_json=data.get('quantity_discounts_json')
@@ -935,6 +1135,7 @@ def api_products_update(product_id):
         product.default_printer_id = data.get('printer_id', product.default_printer_id)
         product.additional_costs = data.get('additional_costs', product.additional_costs)
         product.image_url = data.get('image_url', product.image_url)
+        product.video_url = data.get('video_url', product.video_url)
         product.enable_quantity_discounts = data.get('enable_quantity_discounts', product.enable_quantity_discounts)
         product.visible = data.get('visible', product.visible)
         product.quantity_discounts_json = data.get('quantity_discounts_json')
@@ -1367,10 +1568,35 @@ def api_customer_order_cancel(order_id):
         order = CustomerOrder.query.get_or_404(order_id)
         if order.status != 'Pendiente':
             return jsonify({'error': 'Solo se pueden cancelar órdenes pendientes'}), 400
-        
+
         order.status = 'Cancelada'
+        order.tracking_status = 'Cancelada'
         db.session.commit()
         return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@main.route('/api/customer-orders/<int:order_id>/tracking-status', methods=['POST'])
+@login_required
+def api_customer_order_update_tracking(order_id):
+    """Actualizar el estado de seguimiento visible para el cliente (Recibido, En cola, Imprimiendo, etc.)"""
+    try:
+        order = CustomerOrder.query.get_or_404(order_id)
+        data = request.get_json() or {}
+        new_status = data.get('tracking_status')
+
+        valid_statuses = TRACKING_STEPS + ['Cancelada']
+        if new_status not in valid_statuses:
+            return jsonify({'error': f'Estado inválido. Debe ser uno de: {", ".join(valid_statuses)}'}), 400
+
+        if not order.tracking_code:
+            order.tracking_code = _generate_tracking_code()
+
+        order.tracking_status = new_status
+        db.session.commit()
+        return jsonify({'success': True, 'tracking_status': order.tracking_status, 'tracking_code': order.tracking_code})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
@@ -1635,6 +1861,7 @@ def config_page():
 
 
 @main.route('/api/config/update', methods=['POST'])
+@login_required
 def api_config_update():
     """Actualizar configuración global"""
     try:
@@ -1661,13 +1888,58 @@ def api_config_update():
             config.instagram_url = data['instagram_url']
         if 'whatsapp_url' in data:
             config.whatsapp_url = data['whatsapp_url']
-        
+        if 'telegram_bot_token' in data:
+            config.telegram_bot_token = data['telegram_bot_token']
+        if 'telegram_chat_id' in data:
+            config.telegram_chat_id = data['telegram_chat_id']
+        if 'telegram_notify_enabled' in data:
+            config.telegram_notify_enabled = bool(data['telegram_notify_enabled'])
+        if 'backup_email_to' in data:
+            config.backup_email_to = data['backup_email_to']
+        if 'backup_smtp_user' in data:
+            config.backup_smtp_user = data['backup_smtp_user']
+        if 'backup_smtp_password' in data:
+            config.backup_smtp_password = data['backup_smtp_password']
+        if 'backup_enabled' in data:
+            config.backup_enabled = bool(data['backup_enabled'])
+
         db.session.commit()
-        
+
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
+
+
+@main.route('/api/config/test-backup', methods=['POST'])
+@login_required
+def api_config_test_backup():
+    """Envía un backup de prueba de la base de datos ahora mismo."""
+    config = GlobalConfig.get_singleton()
+    ok, message = send_backup_email(config=config, force=True)
+    if ok:
+        return jsonify({'success': True, 'message': message, 'sent_at': config.backup_last_sent_at.isoformat() if config.backup_last_sent_at else None})
+    return jsonify({'error': message}), 400
+
+
+@main.route('/api/config/test-telegram', methods=['POST'])
+@login_required
+def api_config_test_telegram():
+    """Envía un mensaje de prueba a Telegram con la configuración guardada."""
+    config = GlobalConfig.get_singleton()
+
+    if not config.telegram_bot_token or not config.telegram_chat_id:
+        return jsonify({'error': 'Cargá el token del bot y el Chat ID antes de probar.'}), 400
+
+    ok = send_telegram_message(
+        "✅ <b>¡Todo listo!</b>\nAsí se van a ver los avisos de pedidos nuevos.",
+        config=config,
+        force=True
+    )
+
+    if ok:
+        return jsonify({'success': True})
+    return jsonify({'error': 'No se pudo enviar el mensaje. Revisá el token del bot y el Chat ID.'}), 400
 
 
 @main.route('/api/printers')
@@ -1805,31 +2077,109 @@ def cleanup_expired_orders():
     return len(expired_orders)
 
 
+def _to_direct_image_url(url):
+    """Convierte links para compartir de Google Drive / OneDrive en links de imagen directa.
+    Réplica en Python de convertToDirectImageUrl() (public_catalog.html) para poder usarla
+    en el <head> (og:image), donde no corre JavaScript."""
+    if not url:
+        return url
+    if 'drive.google.com/file/d/' in url:
+        import re
+        match = re.search(r'/file/d/([^/]+)', url)
+        if match:
+            return f'https://lh3.googleusercontent.com/d/{match.group(1)}'
+    if '1drv.ms/u/' in url:
+        return url.replace('/u/', '/i/')
+    if '1drv.ms/b/' in url:
+        return url.replace('/b/', '/i/')
+    return url
+
+
 @main.route('/catalogo')
 def public_catalog():
     """Catálogo público para clientes"""
     products = Product.query.filter_by(visible=True).all()
     config = GlobalConfig.get_singleton()
-    
-    return render_template('public_catalog.html', products=products, config=config)
+
+    og_image = None
+    if config and config.company_logo_url:
+        og_image = _to_direct_image_url(config.company_logo_url)
+    else:
+        first_with_image = next((p for p in products if p.image_url), None)
+        if first_with_image:
+            og_image = _to_direct_image_url(first_with_image.image_url)
+
+    return render_template('public_catalog.html', products=products, config=config, og_image=og_image)
+
+
+@main.route('/robots.txt')
+def robots_txt():
+    """robots.txt básico: permite indexar el catálogo y la cotización, bloquea el panel admin."""
+    lines = [
+        "User-agent: *",
+        "Allow: /catalogo",
+        "Allow: /cotizar",
+        "Disallow: /dashboard",
+        "Disallow: /inventory",
+        "Disallow: /sales",
+        "Disallow: /config",
+        "Disallow: /customer-orders",
+        "Disallow: /cotizaciones",
+        "Disallow: /reports",
+        "Disallow: /users",
+        "Disallow: /expenses",
+        "Disallow: /categories",
+        "Disallow: /cargar-producto",
+        "Disallow: /api/",
+        f"Sitemap: {url_for('main.sitemap_xml', _external=True)}",
+    ]
+    return Response("\n".join(lines), mimetype='text/plain')
+
+
+@main.route('/sitemap.xml')
+def sitemap_xml():
+    """Sitemap dinámico con las páginas públicas del sitio."""
+    pages = [
+        {'loc': url_for('main.public_catalog', _external=True), 'priority': '1.0'},
+        {'loc': url_for('main.quote_request_form', _external=True), 'priority': '0.8'},
+    ]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for page in pages:
+        xml.append(f"  <url><loc>{page['loc']}</loc><priority>{page['priority']}</priority></url>")
+    xml.append('</urlset>')
+    return Response("\n".join(xml), mimetype='application/xml')
+
+
+@main.route('/seguimiento/<code>')
+def track_order(code):
+    """Página pública de seguimiento de un pedido del catálogo, por código único."""
+    config = GlobalConfig.get_singleton()
+    order = CustomerOrder.query.filter_by(tracking_code=code.strip().upper()).first()
+    return render_template('track_order.html', order=order, config=config, steps=TRACKING_STEPS)
 
 
 @main.route('/api/customer-orders/create', methods=['POST'])
+@limiter.limit("8 per hour")
 def api_customer_orders_create():
     """Crear orden de cliente desde el catálogo público"""
     try:
         data = request.get_json()
-        
+
+        # Honeypot anti-spam: campo oculto que sólo un bot completaría.
+        # Respondemos como si todo saliera bien para no delatar el filtro.
+        if data.get('website'):
+            return jsonify({'success': True, 'order_id': 0, 'expires_at': None}), 201
+
         # Validar datos requeridos
         if not data.get('customer_name') or not data.get('customer_phone'):
             return jsonify({'error': 'Nombre y teléfono son requeridos'}), 400
-        
+
         if not data.get('items') or len(data['items']) == 0:
             return jsonify({'error': 'La orden debe tener al menos un item'}), 400
-        
+
         # Calcular fecha de expiración (48 horas)
         expires_at = datetime.utcnow() + timedelta(hours=48)
-        
+
         # Crear orden de cliente
         customer_order = CustomerOrder(
             customer_name=data['customer_name'],
@@ -1838,16 +2188,24 @@ def api_customer_orders_create():
             status='Pendiente',
             expires_at=expires_at,
             items_json=json.dumps(data['items']),
-            total_amount=data.get('total_amount', 0)
+            total_amount=data.get('total_amount', 0),
+            tracking_code=_generate_tracking_code(),
+            tracking_status='Recibido'
         )
-        
+
         db.session.add(customer_order)
         db.session.commit()
-        
+
+        # Avisar por Telegram (si está configurado). Nunca debe romper la
+        # creación del pedido si falla el envío.
+        notify_new_customer_order(customer_order)
+
         return jsonify({
             'success': True,
             'order_id': customer_order.id,
-            'expires_at': expires_at.isoformat()
+            'expires_at': expires_at.isoformat(),
+            'tracking_code': customer_order.tracking_code,
+            'tracking_url': url_for('main.track_order', code=customer_order.tracking_code, _external=True)
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -1869,13 +2227,144 @@ def api_customer_orders_list():
         'expires_at': o.expires_at.isoformat() if o.expires_at else None,
         'is_expired': o.is_expired,
         'items': o.items,
-        'total_amount': o.total_amount
+        'total_amount': o.total_amount,
+        'tracking_code': o.tracking_code,
+        'tracking_status': o.tracking_status
     } for o in orders])
+
+
+# ==================== QUOTE REQUESTS (Cotizaciones a medida) ====================
+
+@main.route('/cotizar')
+def quote_request_form():
+    """Formulario público para pedir cotización de una pieza que no está en el catálogo."""
+    config = GlobalConfig.get_singleton()
+    return render_template('quote_request.html', config=config)
+
+
+@main.route('/api/quote-requests/create', methods=['POST'])
+@limiter.limit("6 per hour")
+def api_quote_requests_create():
+    """Crear una solicitud de cotización a medida (con archivo opcional)."""
+    try:
+        # Honeypot anti-spam
+        if request.form.get('website'):
+            return jsonify({'success': True, 'quote_id': 0}), 201
+
+        customer_name = (request.form.get('customer_name') or '').strip()
+        customer_phone = (request.form.get('customer_phone') or '').strip()
+        customer_email = (request.form.get('customer_email') or '').strip() or None
+        description = (request.form.get('description') or '').strip()
+        reference_link = (request.form.get('reference_link') or '').strip() or None
+        try:
+            quantity = max(1, int(request.form.get('quantity', 1)))
+        except (TypeError, ValueError):
+            quantity = 1
+
+        if not customer_name or not customer_phone:
+            return jsonify({'error': 'Nombre y teléfono son requeridos'}), 400
+        if not description:
+            return jsonify({'error': 'Contanos qué pieza necesitás'}), 400
+
+        stored_filename = None
+        original_filename = None
+        uploaded_file = request.files.get('file')
+        if uploaded_file and uploaded_file.filename:
+            original_filename = uploaded_file.filename
+            ext = os.path.splitext(original_filename)[1].lower()
+            if ext not in ALLOWED_QUOTE_EXTENSIONS:
+                return jsonify({'error': f'Formato de archivo no permitido ({ext or "?"}). Se acepta: ' + ', '.join(sorted(ALLOWED_QUOTE_EXTENSIONS))}), 400
+
+            uploaded_file.seek(0, os.SEEK_END)
+            size = uploaded_file.tell()
+            uploaded_file.seek(0)
+            if size > MAX_QUOTE_FILE_SIZE:
+                return jsonify({'error': f'El archivo supera el tamaño máximo permitido ({MAX_QUOTE_FILE_SIZE // (1024*1024)}MB)'}), 400
+
+            stored_filename = f"{uuid.uuid4().hex}{ext}"
+            uploaded_file.save(os.path.join(_quote_upload_dir(), stored_filename))
+
+        quote = QuoteRequest(
+            customer_name=customer_name,
+            customer_phone=customer_phone,
+            customer_email=customer_email,
+            description=description,
+            quantity=quantity,
+            reference_link=reference_link,
+            file_path=stored_filename,
+            original_filename=original_filename,
+            status='Nueva'
+        )
+        db.session.add(quote)
+        db.session.commit()
+
+        notify_new_quote_request(quote)
+
+        return jsonify({'success': True, 'quote_id': quote.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@main.route('/cotizaciones')
+@login_required
+def quote_requests_page():
+    """Panel admin: listado de solicitudes de cotización a medida."""
+    quotes = QuoteRequest.query.order_by(QuoteRequest.created_at.desc()).all()
+    return render_template('quote_requests.html', quotes=quotes)
+
+
+@main.route('/api/quote-requests/<int:quote_id>/status', methods=['POST'])
+@login_required
+def api_quote_request_update_status(quote_id):
+    """Actualizar el estado de una cotización (Nueva, Cotizada, Rechazada)."""
+    try:
+        quote = QuoteRequest.query.get_or_404(quote_id)
+        data = request.get_json() or {}
+        new_status = data.get('status')
+        if new_status not in ('Nueva', 'Cotizada', 'Rechazada'):
+            return jsonify({'error': 'Estado inválido'}), 400
+        quote.status = new_status
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@main.route('/api/quote-requests/<int:quote_id>/file')
+@login_required
+def api_quote_request_file(quote_id):
+    """Descargar el archivo adjunto de una solicitud de cotización."""
+    quote = QuoteRequest.query.get_or_404(quote_id)
+    if not quote.file_path:
+        return jsonify({'error': 'Esta cotización no tiene archivo adjunto'}), 404
+    return send_from_directory(_quote_upload_dir(), quote.file_path, as_attachment=True,
+                                download_name=quote.original_filename or quote.file_path)
+
+
+@main.route('/api/quote-requests/<int:quote_id>', methods=['DELETE'])
+@login_required
+def api_quote_request_delete(quote_id):
+    """Eliminar una solicitud de cotización (y su archivo, si tenía)."""
+    try:
+        quote = QuoteRequest.query.get_or_404(quote_id)
+        if quote.file_path:
+            file_full_path = os.path.join(_quote_upload_dir(), quote.file_path)
+            if os.path.exists(file_full_path):
+                os.remove(file_full_path)
+        db.session.delete(quote)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 
 # ==================== LOGIN / AUTHENTICATION ====================
 
 @main.route('/login', methods=['GET', 'POST'])
+@limiter.limit("15 per 5 minutes", methods=['POST'])
 def login():
     """Página de login"""
     if request.method == 'POST':

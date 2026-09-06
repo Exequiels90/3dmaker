@@ -201,6 +201,7 @@ class Product(db.Model):
     power_consumption = db.Column(db.Float, default=0.0)  # Consumo de energía en Watts (si no usa el de la impresora)
     additional_costs = db.Column(db.Float, default=0.0)  # Tornillos, imanes, packaging, etc.
     image_url = db.Column(db.String(500), nullable=True)  # URL de imagen del producto
+    video_url = db.Column(db.String(500), nullable=True)  # Link de video (Google Drive, YouTube o archivo directo)
     retail_price = db.Column(db.Float, default=0.0)  # Precio minorista (precio base)
     enable_quantity_discounts = db.Column(db.Boolean, default=True)  # Habilitar descuentos por cantidad
     quantity_discounts_json = db.Column(db.Text, nullable=True)  # Descuentos por cantidad personalizados (JSON)
@@ -436,7 +437,15 @@ class GlobalConfig(db.Model):
     company_logo_url = db.Column(db.String(500), nullable=True)  # URL del logo de la empresa
     instagram_url = db.Column(db.String(500), nullable=True)  # URL de Instagram
     whatsapp_url = db.Column(db.String(500), nullable=True)  # URL de WhatsApp
-    
+    telegram_bot_token = db.Column(db.String(200), nullable=True)  # Token del bot de Telegram
+    telegram_chat_id = db.Column(db.String(100), nullable=True)  # Chat ID donde se envían los avisos
+    telegram_notify_enabled = db.Column(db.Boolean, default=False)  # Activar/desactivar avisos por Telegram
+    backup_email_to = db.Column(db.String(200), nullable=True)  # Email donde recibir el backup de la base de datos
+    backup_smtp_user = db.Column(db.String(200), nullable=True)  # Cuenta de Gmail usada para enviar el backup
+    backup_smtp_password = db.Column(db.String(200), nullable=True)  # Contraseña de aplicación de Gmail
+    backup_enabled = db.Column(db.Boolean, default=False)  # Activar/desactivar backups automáticos
+    backup_last_sent_at = db.Column(db.DateTime, nullable=True)  # Última vez que se envió un backup
+
     @classmethod
     def get_singleton(cls):
         """Obtiene o crea la configuración única del sistema"""
@@ -483,6 +492,8 @@ class CustomerOrder(db.Model):
     status = db.Column(db.String(50), default='Pendiente', nullable=False)  # Pendiente, Confirmada, Cancelada
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=True)  # Fecha de expiración (48hs)
+    tracking_code = db.Column(db.String(20), nullable=True)  # Código público para seguimiento del pedido
+    tracking_status = db.Column(db.String(30), default='Recibido', nullable=False)  # Recibido, En cola, Imprimiendo, Listo para retirar, Entregado, Cancelada
     
     # Items de la orden (JSON con productos, cantidades y precios)
     items_json = db.Column(db.Text, nullable=False)
@@ -503,3 +514,23 @@ class CustomerOrder(db.Model):
     
     def __repr__(self):
         return f'<CustomerOrder {self.id} - {self.customer_name} - {self.status}>'
+
+
+class QuoteRequest(db.Model):
+    """Pedidos de cotización a medida (piezas que no están en el catálogo)"""
+    __tablename__ = 'quote_request'
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(200), nullable=False)
+    customer_phone = db.Column(db.String(50), nullable=False)
+    customer_email = db.Column(db.String(120), nullable=True)
+    description = db.Column(db.Text, nullable=False)
+    quantity = db.Column(db.Integer, default=1, nullable=False)
+    reference_link = db.Column(db.String(500), nullable=True)  # Link a fotos/planos (Drive, etc.)
+    file_path = db.Column(db.String(300), nullable=True)  # Nombre del archivo guardado en disco (STL/OBJ/3MF/imagen)
+    original_filename = db.Column(db.String(300), nullable=True)
+    status = db.Column(db.String(30), default='Nueva', nullable=False)  # Nueva, Cotizada, Rechazada
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f'<QuoteRequest {self.id} - {self.customer_name} - {self.status}>'

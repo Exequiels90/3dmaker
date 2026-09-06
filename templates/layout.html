@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ _('Taller de Impresión 3D') }}{% endblock %}</title>
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- AdminLTE CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
     <!-- Bootstrap CSS -->
@@ -13,16 +17,154 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    
+
     <style>
+        :root {
+            --brand-ink: #17181c;
+            --brand-ink-soft: #2a2c33;
+            --brand-accent: #ff5a1f;
+            --brand-accent-dark: #e14e15;
+            --brand-accent-soft: #fff1ea;
+            --brand-paper: #f7f6f3;
+            --brand-border: #e9e7e2;
+            --brand-radius: 14px;
+        }
+
+        body, .content-wrapper, .card, .btn, .form-control, .form-select, .table {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        h1, h2, h3, h4, h5, .brand-text, .card-title {
+            font-family: 'Poppins', 'Inter', sans-serif;
+        }
         body {
-            background-color: #f4f6f9;
+            background-color: var(--brand-paper);
         }
         .content-wrapper {
-            background-color: #fff;
+            background-color: var(--brand-paper);
+        }
+
+        /* ---------- Top navbar ---------- */
+        .main-header.navbar {
+            background: #fff !important;
+            border-bottom: 1px solid var(--brand-border);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+        }
+        .main-header .nav-link {
+            color: var(--brand-ink) !important;
+        }
+        .main-header .navbar-text small,
+        .main-header .navbar-text {
+            color: #7a7d85;
+        }
+
+        /* ---------- Sidebar ---------- */
+        .main-sidebar {
+            background: var(--brand-ink) !important;
+            box-shadow: none;
+        }
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active {
+            background: var(--brand-accent);
+            color: #fff;
+            border-radius: 10px;
+        }
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+            background: rgba(255, 90, 31, 0.14);
+            border-radius: 10px;
+        }
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+            border-radius: 10px;
+            margin-bottom: 2px;
+            color: rgba(255,255,255,0.82);
+        }
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
+            color: rgba(255,255,255,0.65);
+        }
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active {
+            color: #fff;
+            font-weight: 600;
+        }
+        .brand-link {
+            border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        }
+        .brand-image {
+            background: var(--brand-accent);
+            color: #fff;
+            border-radius: 8px;
+            padding: 6px;
+        }
+        .brand-text {
+            font-weight: 700 !important;
+            letter-spacing: -0.01em;
+        }
+        .os-theme-light > .os-scrollbar > .os-scrollbar-track > .os-scrollbar-handle {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* ---------- Cards & content ---------- */
+        .card {
+            border: 1px solid var(--brand-border);
+            border-radius: var(--brand-radius);
+            box-shadow: 0 6px 20px -12px rgba(23,24,28,0.12);
+        }
+        .card-header {
+            background: #fff;
+            border-bottom: 1px solid var(--brand-border);
+            border-radius: var(--brand-radius) var(--brand-radius) 0 0 !important;
+        }
+        .card.card-primary:not(.card-outline) > .card-header,
+        .card.card-warning:not(.card-outline) > .card-header,
+        .card.card-info:not(.card-outline) > .card-header,
+        .card.card-success:not(.card-outline) > .card-header,
+        .card.card-danger:not(.card-outline) > .card-header {
+            background: var(--brand-ink);
+            color: #fff;
+        }
+
+        .btn-primary {
+            background: var(--brand-ink);
+            border-color: var(--brand-ink);
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: var(--brand-accent);
+            border-color: var(--brand-accent);
+        }
+        .btn-success { background: #1c9d6c; border-color: #1c9d6c; }
+        .btn-success:hover { background: #167e57; border-color: #167e57; }
+        .btn-warning { background: var(--brand-accent); border-color: var(--brand-accent); color: #fff; }
+        .btn-warning:hover { background: var(--brand-accent-dark); border-color: var(--brand-accent-dark); color: #fff; }
+
+        .small-box, .info-box {
+            border-radius: var(--brand-radius);
+            box-shadow: 0 6px 20px -12px rgba(23,24,28,0.14);
+        }
+
+        .content-header h1 {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--brand-ink);
+        }
+
+        .table thead th {
+            border-top: none;
+            color: #7a7d85;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+        }
+
+        .main-footer {
+            background: #fff;
+            border-top: 1px solid var(--brand-border);
+            color: #9a9da4;
+        }
+
+        .btn, .form-control, .form-select, .badge {
+            border-radius: 8px;
         }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
 </head>
 <body class="hold-transition sidebar-mini">
@@ -93,7 +235,7 @@
                         </li>
                         
                         <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link {% if 'sales' in request.path or 'customer-orders' in request.path %}active{% endif %}">
+                            <a href="#" class="nav-link {% if 'sales' in request.path or 'customer-orders' in request.path or 'cotizaciones' in request.path %}active{% endif %}">
                                 <i class="nav-icon fas fa-shopping-cart"></i>
                                 <p>
                                     {{ _('Ventas y Órdenes') }}
@@ -113,6 +255,12 @@
                                         <p>{{ _('Customer Orders') }}</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.quote_requests_page') }}" class="nav-link {% if 'cotizaciones' in request.path %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ _('Cotizaciones a Medida') }}</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         
@@ -129,6 +277,12 @@
                                     <a href="{{ url_for('main.inventory') }}" class="nav-link {% if 'inventory' in request.path and 'expenses' not in request.path and 'categories' not in request.path %}active{% endif %}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>{{ _('Inventario') }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url_for('main.quick_add_product') }}" class="nav-link {% if 'cargar-producto' in request.path %}active{% endif %}">
+                                        <i class="fas fa-mobile-alt nav-icon"></i>
+                                        <p>{{ _('Carga rápida (celular)') }}</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">

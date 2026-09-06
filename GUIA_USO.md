@@ -185,13 +185,69 @@ Ingresos - Costo_Producción - Comisión_Plataforma
 4. Realizar backups regulares de la BD
 5. Configurar logs de auditoría
 
+## 🆕 Funciones Nuevas
+
+### Seguimiento de pedidos (link público)
+Cada pedido hecho desde `/catalogo` genera automáticamente un link único tipo
+`/seguimiento/CODIGO123` que el cliente recibe apenas hace el pedido (con botón
+para copiarlo o mandárselo por WhatsApp). Desde `/customer-orders` (panel admin)
+podés ir cambiando el estado del pedido con un selector: **Recibido → En cola →
+Imprimiendo → Listo para retirar → Entregado**. El cliente ve ese progreso en
+tiempo real entrando a su link, sin tener que preguntarte por WhatsApp.
+
+### Cotización de piezas a medida
+En `/cotizar` (con un botón visible en el catálogo: "¿No lo encontrás? Pedí un
+presupuesto a medida") el cliente puede describir una pieza que no está en el
+catálogo y, opcionalmente, subir un archivo (STL, OBJ, 3MF, STEP, foto o PDF,
+hasta 20MB) o pegar un link de Drive de referencia. Te llega un aviso a Telegram
+con los datos y, si subió un archivo, **el archivo llega directo adjunto al
+mensaje de Telegram**. Gestionás las solicitudes desde `/cotizaciones` en el panel
+(cambiar estado, descargar el archivo, contactar por WhatsApp con un clic).
+
+### Backup automático de la base de datos por email
+En `/config`, sección "Backup automático de la base de datos", cargás:
+1. El email donde querés recibir el backup.
+2. Una cuenta de Gmail remitente.
+3. Una **contraseña de aplicación** de esa cuenta de Gmail (no la contraseña
+   normal — se genera en https://myaccount.google.com/apppasswords, requiere
+   tener la verificación en 2 pasos activada).
+4. Activás el interruptor y probás con el botón "Enviar backup de prueba ahora".
+
+Para que se envíe solo (por ejemplo, una vez por semana) sin que tengas que
+apretar el botón, hay que programarlo **una vez** desde PythonAnywhere:
+1. Entrá a tu cuenta de PythonAnywhere → pestaña **Tasks**.
+2. En "Scheduled task", elegí un horario semanal (ej: todos los lunes 6:00 AM).
+3. En el comando, poné: `python3 /home/TU_USUARIO/3dmaker/backup.py`
+   (reemplazá `TU_USUARIO` y la ruta según donde esté tu proyecto).
+4. Guardá. A partir de ahí corre solo, según lo que hayas activado en `/config`.
+
+Si tu plan de PythonAnywhere no tiene la pestaña Tasks disponible (algunos
+planes gratuitos limitan esto), el botón manual de "Enviar backup de prueba
+ahora" siempre te sirve para hacerlo a mano cuando quieras.
+
+### SEO y vista previa al compartir
+El catálogo ahora tiene meta tags Open Graph: al compartir el link de
+`/catalogo` por WhatsApp o Instagram se va a ver una tarjeta con el nombre,
+descripción e imagen del taller (usando el logo configurado en `/config`, o si
+no la primera foto de producto disponible). También se agregó `/robots.txt` y
+`/sitemap.xml` para que Google pueda indexar el catálogo.
+
+### Protección anti-spam
+Los formularios públicos (pedido y cotización) tienen un campo trampa invisible
+que descarta envíos de bots automáticos, y un límite de intentos por hora por
+dirección IP para evitar abuso. El login del panel también tiene un límite de
+intentos para dificultar ataques de fuerza bruta.
+
 ## 📈 Próximos Pasos Recomendados
 
-1. **Agregar autenticación**: Multi-usuario con roles
-2. **Exportar reportes**: PDF/Excel con datos
-3. **Integrar Mercado Pago**: Pagos automáticos
-4. **App móvil**: Versión para smartphone
-5. **Backup automático**: Sincronización con cloud
+1. **Integrar Mercado Pago**: pagos automáticos desde el catálogo (pendiente:
+   requiere monotributo habilitado, según lo conversado).
+2. **Uber Direct / delivery a domicilio**: quedó en veremos — la disponibilidad
+   en Argentina no está confirmada y depende de tener antes una pasarela de pago.
+3. **App móvil**: versión nativa para smartphone (hoy ya es usable desde el
+   navegador del celular, incluida la carga rápida de productos).
+4. **Reseñas de clientes** y sección "Cómo trabajo" en el catálogo, para sumar
+   confianza.
 
 ## 📞 Soporte
 

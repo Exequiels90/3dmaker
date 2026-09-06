@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>{{ _('Carga rápida de productos') }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+        --ink: #17181c;
+        --accent: #ff5a1f;
+        --accent-dark: #e14e15;
+        --accent-soft: #fff1ea;
+        --paper: #f7f6f3;
+        --border: #e9e7e2;
+        --success: #1c9d6c;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        min-height: 100vh;
+        padding-bottom: 60px;
+    }
+    h1, h2, .brand-font { font-family: 'Poppins', sans-serif; }
+
+    .topbar {
+        background: var(--ink);
+        color: #fff;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; }
+    .topbar .brand-mark {
+        width: 34px; height: 34px; border-radius: 9px;
+        background: var(--accent); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .topbar a.back {
+        color: rgba(255,255,255,0.75);
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .topbar a.back:hover { color: #fff; }
+
+    .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 0; }
+
+    .intro { margin-bottom: 18px; }
+    .intro h1 { font-size: 1.25rem; font-weight: 700; margin: 0 0 4px; }
+    .intro p { color: #6b6e76; font-size: 0.88rem; margin: 0; }
+
+    .field { margin-bottom: 18px; }
+    .field label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin-bottom: 6px;
+    }
+    .field .hint { color: #8b8e95; font-size: 0.76rem; margin-top: 5px; line-height: 1.4; }
+    .field input[type=text],
+    .field input[type=number],
+    .field input[type=url],
+    .field textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 13px 14px;
+        font-size: 1rem;
+        background: #fff;
+        font-family: inherit;
+        color: var(--ink);
+    }
+    .field textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+    .field input:focus, .field textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .required-mark { color: var(--accent); }
+
+    .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 13px 14px;
+        margin-bottom: 18px;
+    }
+    .switch-row span { font-weight: 600; font-size: 0.88rem; }
+    .switch {
+        position: relative;
+        width: 46px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; cursor: pointer; inset: 0;
+        background: #d9d6cf; border-radius: 30px; transition: .2s;
+    }
+    .slider::before {
+        content: ""; position: absolute; width: 20px; height: 20px;
+        left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s;
+    }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    .submit-btn {
+        width: 100%;
+        background: var(--ink);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 6px;
+    }
+    .submit-btn:active { background: var(--accent); }
+    .submit-btn:disabled { opacity: 0.6; }
+
+    .banner {
+        border-radius: 12px;
+        padding: 13px 14px;
+        font-size: 0.86rem;
+        margin-bottom: 18px;
+        display: none;
+    }
+    .banner.error { background: #fdeceb; color: #c23c2b; border: 1px solid #f6c9c2; }
+    .banner.show { display: block; }
+
+    /* ---------- Success screen ---------- */
+    .success-screen {
+        display: none;
+        text-align: center;
+        padding: 50px 20px 30px;
+    }
+    .success-screen.show { display: block; }
+    .success-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: var(--success); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; margin: 0 auto 20px;
+    }
+    .success-screen h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .success-screen p { color: #6b6e76; font-size: 0.9rem; margin-bottom: 26px; }
+    .success-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-block {
+        display: block;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        text-decoration: none;
+        text-align: center;
+    }
+    .btn-block.primary { background: var(--ink); color: #fff; }
+    .btn-block.secondary { background: #fff; color: var(--ink); border: 1px solid var(--border); }
+
+    #formScreen.hide { display: none; }
+</style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">
+            <span class="brand-mark"><i class="fas fa-cube"></i></span>
+            {{ _('Carga rápida') }}
+        </div>
+        <a href="{{ url_for('main.inventory') }}" class="back"><i class="fas fa-arrow-left"></i> {{ _('Panel') }}</a>
+    </div>
+
+    <div class="wrap">
+        <div id="formScreen">
+            <div class="intro">
+                <h1>{{ _('Nuevo producto') }}</h1>
+                <p>{{ _('Pensada para cargar desde el celular apenas termines una impresión. Los datos de costos avanzados los podés completar después desde la computadora si querés.') }}</p>
+            </div>
+
+            <div class="banner error" id="errorBanner"></div>
+
+            <form id="quickAddForm">
+                <div class="field">
+                    <label>{{ _('Nombre del producto') }} <span class="required-mark">*</span></label>
+                    <input type="text" id="qName" required placeholder="{{ _('Ej: Maceta geométrica chica') }}">
+                </div>
+
+                <div class="field">
+                    <label>{{ _('Precio ($)') }}</label>
+                    <input type="number" id="qPrice" min="0" step="0.01" inputmode="decimal" placeholder="{{ _('Ej: 4500') }}">
+                    <div class="hint">{{ _('Si lo dejás vacío, se puede completar después.') }}</div>
+                </div>
+
+                <div class="field">
+                    <label>{{ _('Categoría') }}</label>
+                    <input type="text" id="qCategory" list="categoryOptions" placeholder="{{ _('Ej: Decoración') }}">
+                    <datalist id="categoryOptions">
+                        {% for cat in categories %}
+                        <option value="{{ cat.name }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <div class="field">
+                    <label>{{ _('Descripción') }}</label>
+                    <textarea id="qDescription" rows="2" placeholder="{{ _('Una frase corta para el catálogo (opcional)') }}"></textarea>
+                </div>
+
+                <div class="field">
+                    <label>{{ _('Fotos (links para compartir de Google Drive)') }}</label>
+                    <textarea id="qPhotos" rows="4" placeholder="{{ _('Pegá acá uno o más links, uno por línea') }}"></textarea>
+                    <div class="hint">
+                        {{ _('En Drive: abrí la foto → Compartir → Copiar enlace, y pegalo acá. Podés pegar varios (uno por línea) para que se vean en carrusel.') }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>{{ _('Video (opcional)') }}</label>
+                    <input type="text" id="qVideo" placeholder="{{ _('Link de Drive o YouTube') }}">
+                    <div class="hint">{{ _('Va a aparecer con un botón de "Ver video" en la tarjeta del producto.') }}</div>
+                </div>
+
+                <div class="switch-row">
+                    <span>{{ _('Descuento por cantidad') }}</span>
+                    <label class="switch">
+                        <input type="checkbox" id="qDiscounts" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-row">
+                    <span>{{ _('Visible en el catálogo ya') }}</span>
+                    <label class="switch">
+                        <input type="checkbox" id="qVisible" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-cloud-upload-alt"></i> {{ _('Guardar producto') }}
+                </button>
+            </form>
+        </div>
+
+        <div class="success-screen" id="successScreen">
+            <div class="success-icon"><i class="fas fa-check"></i></div>
+            <h2>{{ _('¡Producto cargado!') }}</h2>
+            <p id="successText"></p>
+            <div class="success-actions">
+                <button type="button" class="btn-block primary" id="addAnotherBtn">{{ _('Cargar otro producto') }}</button>
+                <a href="{{ url_for('main.public_catalog') }}" target="_blank" class="btn-block secondary">{{ _('Ver catálogo') }}</a>
+                <a href="{{ url_for('main.inventory') }}" class="btn-block secondary">{{ _('Ir al panel completo') }}</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('quickAddForm');
+        const errorBanner = document.getElementById('errorBanner');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function showError(msg) {
+            errorBanner.textContent = msg;
+            errorBanner.classList.add('show');
+        }
+        function clearError() {
+            errorBanner.classList.remove('show');
+            errorBanner.textContent = '';
+        }
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearError();
+
+            const name = document.getElementById('qName').value.trim();
+            if (!name) {
+                showError('{{ _("Poné al menos el nombre del producto.") }}');
+                return;
+            }
+
+            const photosRaw = document.getElementById('qPhotos').value;
+            const images = photosRaw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            const videoUrl = document.getElementById('qVideo').value.trim();
+
+            const payload = {
+                name: name,
+                category: document.getElementById('qCategory').value.trim() || 'General',
+                description: document.getElementById('qDescription').value.trim() || null,
+                retail_price: parseFloat(document.getElementById('qPrice').value) || 0,
+                images: images,
+                image_url: images.length > 0 ? images[0] : null,
+                video_url: videoUrl || null,
+                enable_quantity_discounts: document.getElementById('qDiscounts').checked,
+                visible: document.getElementById('qVisible').checked
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border" style="width:1rem;height:1rem;border:2px solid #fff;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin .6s linear infinite;"></span> {{ _("Guardando...") }}';
+
+            try {
+                const response = await fetch('{{ url_for("main.api_products_create") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    document.getElementById('successText').textContent = `"${name}" {{ _("ya está guardado.") }}`;
+                    document.getElementById('formScreen').classList.add('hide');
+                    document.getElementById('successScreen').classList.add('show');
+                } else {
+                    const result = await response.json().catch(() => ({}));
+                    showError(result.error || '{{ _("No se pudo guardar el producto. Probá de nuevo.") }}');
+                }
+            } catch (err) {
+                showError('{{ _("Error de conexión: ") }}' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> {{ _("Guardar producto") }}';
+            }
+        });
+
+        document.getElementById('addAnotherBtn').addEventListener('click', function() {
+            form.reset();
+            document.getElementById('qDiscounts').checked = true;
+            document.getElementById('qVisible').checked = true;
+            document.getElementById('successScreen').classList.remove('show');
+            document.getElementById('formScreen').classList.remove('hide');
+            clearError();
+            window.scrollTo(0, 0);
+        });
+    </script>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</body>
+</html>
