@@ -61,6 +61,10 @@
         .main-sidebar {
             background: var(--brand-ink) !important;
             box-shadow: none;
+            width: 250px;
+        }
+        .main-sidebar .sidebar {
+            width: 100%;
         }
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active {
@@ -84,14 +88,21 @@
             color: #fff;
             font-weight: 600;
         }
+        /* AdminLTE recorta el texto del menú a una sola línea (white-space: nowrap
+           + overflow: hidden) y con etiquetas largas ("Gestión de Usuarios",
+           "Ventas y Órdenes") se corta antes de llegar al borde. Lo dejamos
+           envolver en dos líneas en vez de cortarse. */
+        .nav-sidebar .nav-link p {
+            white-space: normal;
+            overflow: visible;
+            line-height: 1.25;
+        }
         .brand-link {
             border-bottom: 1px solid rgba(255,255,255,0.08) !important;
         }
         .brand-image {
-            background: var(--brand-accent);
-            color: #fff;
-            border-radius: 8px;
-            padding: 6px;
+            background: transparent;
+            object-fit: contain;
         }
         .brand-text {
             font-weight: 700 !important;
@@ -218,7 +229,7 @@
                 {% if config and config.company_logo_url %}
                 <img src="{{ config.company_logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="max-height: 50px; max-width: 50px;">
                 {% else %}
-                <i class="fas fa-cube brand-image"></i>
+                <img src="{{ url_for('static', filename='img/logo_icon.png') }}" alt="Logo" class="brand-image elevation-3" style="max-height: 50px; max-width: 50px; object-fit: contain;">
                 {% endif %}
                 <span class="brand-text font-weight-light">{{ config.company_name if config else _('Sistema 3D') }}</span>
             </a>

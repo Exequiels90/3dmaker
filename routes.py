@@ -26,6 +26,49 @@ def _quote_upload_dir():
     return path
 
 
+# ==================== IMÁGENES DE PRODUCTO (subida rápida desde el panel) ====================
+# Guardadas en static/ para poder servirlas directo con <img src="...">.
+# Pensadas como almacenamiento "de paso": el admin las sube rápido desde el celular
+# y más adelante las reemplaza por un link externo (Drive/OneDrive) para liberar espacio.
+PRODUCT_IMAGE_UPLOAD_SUBDIR = os.path.join('static', 'uploads', 'products')
+PRODUCT_IMAGE_URL_MARKER = '/static/uploads/products/'
+ALLOWED_PRODUCT_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+MAX_PRODUCT_IMAGE_SIZE = 20 * 1024 * 1024  # 20 MB (los GIF pesan)
+
+
+def _product_image_upload_dir():
+    """Directorio absoluto donde se guardan las imágenes/GIF subidos de productos (se crea si no existe)."""
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(basedir, PRODUCT_IMAGE_UPLOAD_SUBDIR)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _is_local_product_image(url):
+    """True si la URL apunta a un archivo subido localmente (no un link externo tipo Drive/OneDrive)."""
+    return bool(url) and PRODUCT_IMAGE_URL_MARKER in url
+
+
+def _delete_local_product_image(url):
+    """Borra del disco un archivo de imagen de producto subido localmente, si ya no lo usa ningún producto."""
+    if not _is_local_product_image(url):
+        return
+    # No borrar si algún producto (imagen principal o galería) todavía referencia esta misma URL
+    still_used = (Product.query.filter_by(image_url=url).first()
+                  or ProductImage.query.filter_by(image_url=url).first())
+    if still_used:
+        return
+    filename = os.path.basename(url.split(PRODUCT_IMAGE_URL_MARKER)[-1].split('?')[0])
+    if not filename:
+        return
+    full_path = os.path.join(_product_image_upload_dir(), filename)
+    try:
+        if os.path.isfile(full_path):
+            os.remove(full_path)
+    except OSError:
+        pass
+
+
 # ==================== TELEGRAM NOTIFICATIONS ====================
 
 def send_telegram_message(text, config=None, force=False):
@@ -1046,6 +1089,34 @@ def api_product_detail(product_id):
     })
 
 
+@main.route('/api/products/upload-image', methods=['POST'])
+@login_required
+def api_products_upload_image():
+    """Sube una imagen/GIF de producto al servidor (subida rápida desde el celular) y devuelve su URL local."""
+    try:
+        uploaded_file = request.files.get('file')
+        if not uploaded_file or not uploaded_file.filename:
+            return jsonify({'error': 'No se recibió ningún archivo'}), 400
+
+        ext = os.path.splitext(uploaded_file.filename)[1].lower()
+        if ext not in ALLOWED_PRODUCT_IMAGE_EXTENSIONS:
+            return jsonify({'error': f'Formato no permitido ({ext or "?"}). Se acepta: ' + ', '.join(sorted(ALLOWED_PRODUCT_IMAGE_EXTENSIONS))}), 400
+
+        uploaded_file.seek(0, os.SEEK_END)
+        size = uploaded_file.tell()
+        uploaded_file.seek(0)
+        if size > MAX_PRODUCT_IMAGE_SIZE:
+            return jsonify({'error': f'El archivo supera el tamaño máximo permitido ({MAX_PRODUCT_IMAGE_SIZE // (1024*1024)}MB)'}), 400
+
+        stored_filename = f"{uuid.uuid4().hex}{ext}"
+        uploaded_file.save(os.path.join(_product_image_upload_dir(), stored_filename))
+
+        url = url_for('static', filename=f'uploads/products/{stored_filename}')
+        return jsonify({'success': True, 'url': url}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @main.route('/api/products/create', methods=['POST'])
 @login_required
 def api_products_create():
@@ -1121,7 +1192,11 @@ def api_products_update(product_id):
     try:
         product = Product.query.get_or_404(product_id)
         data = request.get_json()
-        
+
+        # Recordar las imágenes en uso antes de aplicar los cambios, para poder
+        # liberar del disco las que se suban localmente y luego se reemplacen.
+        old_image_urls = set(filter(None, [product.image_url] + [img.image_url for img in product.images]))
+
         product.name = data.get('name', product.name)
         product.category = data.get('category', product.category)
         product.description = data.get('description', product.description)
@@ -1173,9 +1248,14 @@ def api_products_update(product_id):
                 db.session.add(pi)
             
             product.image_url = images_data[0]
-        
+
         db.session.commit()
-        
+
+        # Liberar del disco las imágenes locales que ya no quedaron referenciadas
+        new_image_urls = set(filter(None, [product.image_url] + images_data))
+        for old_url in old_image_urls - new_image_urls:
+            _delete_local_product_image(old_url)
+
         return jsonify({'success': True}), 200
     except Exception as e:
         db.session.rollback()
@@ -1188,8 +1268,14 @@ def api_products_delete(product_id):
     """Eliminar producto"""
     try:
         product = Product.query.get_or_404(product_id)
+        image_urls_to_check = set(filter(None, [product.image_url] + [img.image_url for img in product.images]))
+
         db.session.delete(product)
         db.session.commit()
+
+        for url in image_urls_to_check:
+            _delete_local_product_image(url)
+
         return jsonify({'success': True}), 200
     except Exception as e:
         db.session.rollback()

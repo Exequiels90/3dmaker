@@ -232,6 +232,19 @@ descripción e imagen del taller (usando el logo configurado en `/config`, o si
 no la primera foto de producto disponible). También se agregó `/robots.txt` y
 `/sitemap.xml` para que Google pueda indexar el catálogo.
 
+### Ficha de detalle del producto
+En el catálogo, al hacer click en la imagen, el video, el nombre/descripción de un
+producto o en el link "Ver detalle completo", se abre una ficha con la información
+completa: descripción sin recortar, todas las fotos (con miniaturas para cambiar
+entre ellas) y, si el producto tiene video cargado, se reproduce ahí mismo. Desde
+la ficha también se puede elegir cantidad y agregar al carrito, igual que desde la
+tarjeta de la grilla.
+
+La tarjeta en la grilla se mantiene liviana a propósito: muestra una sola imagen
+de portada (no el video) con una descripción corta de 2 líneas, y el video/galería
+completos recién se cargan cuando el cliente hace click para ver el detalle — así
+la página carga rápido aunque tengas muchos productos con video.
+
 ### Protección anti-spam
 Los formularios públicos (pedido y cotización) tienen un campo trampa invisible
 que descarta envíos de bots automáticos, y un límite de intentos por hora por

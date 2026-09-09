@@ -143,11 +143,11 @@ function viewOrderDetails(orderId) {
         .then(orders => {
             const order = orders.find(o => o.id === orderId);
             if (order) {
-                let itemsHtml = '<table class="table table-sm"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unitario</th><th>Subtotal</th></tr></thead><tbody>';
+                let itemsHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unitario</th><th>Subtotal</th></tr></thead><tbody>';
                 order.items.forEach(item => {
                     itemsHtml += `<tr><td>${item.name}</td><td>${item.quantity}</td><td>$${item.unit_price}</td><td>$${item.quantity * item.unit_price}</td></tr>`;
                 });
-                itemsHtml += '</tbody></table>';
+                itemsHtml += '</tbody></table></div>';
                 
                 // Mostrar/ocultar botones según el estado
                 const confirmBtn = document.getElementById('confirmOrderBtn');

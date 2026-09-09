@@ -122,9 +122,16 @@
                                 <div class="form-group">
                                     <label>{{ _('URL de Imagen') }}</label>
                                     <input type="text" id="productImageUrl" class="form-control" placeholder="https://...">
-                                    <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="addImage()">
-                                        <i class="fas fa-plus"></i> {{ _('Agregar') }}
-                                    </button>
+                                    <div class="mt-1">
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="addImage()">
+                                            <i class="fas fa-plus"></i> {{ _('Agregar link') }}
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('productImageFileInput').click()">
+                                            <i class="fas fa-camera"></i> {{ _('Subir foto') }}
+                                        </button>
+                                        <input type="file" id="productImageFileInput" accept="image/*" style="display:none" onchange="uploadProductImage(this)">
+                                    </div>
+                                    <small class="text-muted">{{ _('Subí rápido desde el celular; después reemplazá por un link definitivo (Drive/OneDrive) y bajá el archivo con el botón de nube.') }}</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -167,8 +174,7 @@
                                 </div>
                             </div>
                         </div>
-                        </div>
-                        
+
                         <div class="row" id="imagesRow" style="display: none;">
                             <div class="col-md-12">
                                 <div class="card">
@@ -193,22 +199,24 @@
                 </div>
                 
                 <!-- Products Table -->
-                <table id="productsTable" class="table table-striped table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nombre del Producto</th>
-                            <th>Imagen</th>
-                            <th>Peso (g)</th>
-                            <th>Tiempo de Impresión</th>
-                            <th>Material</th>
-                            <th>Costo de Producción</th>
-                            <th>Precio Sugerido</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsBody">
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table id="productsTable" class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre del Producto</th>
+                                <th>Imagen</th>
+                                <th>Peso (g)</th>
+                                <th>Tiempo de Impresión</th>
+                                <th>Material</th>
+                                <th>Costo de Producción</th>
+                                <th>Precio Sugerido</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsBody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -294,16 +302,50 @@ function addImage() {
     document.getElementById('imagesRow').style.display = 'block';
 }
 
+function isLocalProductImage(url) {
+    return !!url && url.includes('/static/uploads/products/');
+}
+
+function uploadProductImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/api/products/upload-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (ok && data.success) {
+            productImages.push(data.url);
+            renderImagesList();
+            document.getElementById('imagesRow').style.display = 'block';
+        } else {
+            alert('Error al subir la imagen: ' + (data.error || 'desconocido'));
+        }
+    })
+    .catch(err => alert('Error al subir la imagen: ' + err.message))
+    .finally(() => { input.value = ''; });
+}
+
 function renderImagesList() {
     const list = document.getElementById('imagesList');
     list.innerHTML = '';
-    
+
     productImages.forEach((url, index) => {
+        const local = isLocalProductImage(url);
         const div = document.createElement('div');
         div.className = 'd-flex align-items-center mb-2';
         div.innerHTML = `
             <img src="${url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; margin-right: 10px; max-width: 80px;">
+            <span class="badge ${local ? 'badge-warning' : 'badge-success'} mr-2" title="${local ? 'Guardada en el servidor - reemplazala por un link cuando tengas tiempo' : 'Link externo'}">
+                ${local ? '📱 Local' : '☁️ Link'}
+            </span>
             <input type="text" class="form-control" value="${url}" onchange="updateImage(${index}, this.value)" style="flex: 1;">
+            ${local ? `<a href="${url}" download class="btn btn-sm btn-info ml-2" title="{{ _('Descargar a la PC') }}"><i class="fas fa-cloud-download-alt"></i></a>` : ''}
             <button type="button" class="btn btn-sm btn-danger ml-2" onclick="removeImage(${index})">
                 <i class="fas fa-trash"></i>
             </button>
@@ -478,8 +520,8 @@ function loadProducts() {
             tbody.innerHTML = '';
             products.forEach(product => {
                 const imageUrl = convertToDirectImageUrl(product.image_url);
-                const imageHtml = imageUrl ? 
-                    `<img src="${imageUrl}" style="height:40px; width:40px; object-fit:cover; border-radius:4px;" alt="${product.name}">` : 
+                const imageHtml = imageUrl ?
+                    `<img src="${imageUrl}" style="height:40px; width:40px; object-fit:cover; border-radius:4px;" alt="${product.name}">${isLocalProductImage(product.image_url) ? ' <span class="badge badge-warning" title="Guardada en el servidor - todavía no reemplazada por un link">📱</span>' : ''}` :
                     '<span class="text-muted">Sin imagen</span>';
                 
                 const row = `

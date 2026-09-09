@@ -386,6 +386,53 @@
     }
     .btn-add:hover { background: var(--accent); color: #fff; }
 
+    /* ---------- Product detail trigger ---------- */
+    .product-clickable { cursor: pointer; }
+    .btn-view-detail {
+        background: none;
+        border: none;
+        padding: 0 0 12px 0;
+        margin-top: -6px;
+        color: var(--accent-dark);
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+    }
+    .btn-view-detail i { font-size: 0.7rem; transition: transform .18s ease; }
+    .btn-view-detail:hover i { transform: translateX(3px); }
+
+    /* ---------- Product detail modal ---------- */
+    #detailModalMedia img.detail-main-img {
+        width: 100%;
+        max-height: 380px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: var(--paper);
+        cursor: zoom-in;
+        display: block;
+    }
+    .detail-thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .detail-thumbs img {
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        transition: border-color .15s ease;
+    }
+    .detail-thumbs img:hover, .detail-thumbs img.active { border-color: var(--accent); }
+    .detail-full-desc {
+        color: var(--ink-soft);
+        font-size: 0.94rem;
+        line-height: 1.55;
+        margin: 16px 0;
+        white-space: pre-line;
+    }
+
     /* ---------- Empty state ---------- */
     .empty-state {
         text-align: center;
@@ -544,7 +591,7 @@
                 {% if config and config.company_logo_url %}
                 <img src="{{ config.company_logo_url }}" alt="Logo">
                 {% else %}
-                <span class="brand-mark"><i class="fas fa-cube"></i></span>
+                <img src="{{ url_for('static', filename='img/logo_icon.png') }}" alt="Logo" style="object-fit: contain; background: transparent; border: none;">
                 {% endif %}
                 <span>{{ config.company_name if config and config.company_name else _('Catálogo 3D') }}</span>
             </a>
@@ -620,11 +667,11 @@
     <div class="row" id="productsGrid">
         {% for product in products %}
         <div class="col-lg-3 col-md-4 col-sm-6">
-            <div class="product-card" data-category="{{ product.category or 'General' }}">
+            <div class="product-card" id="product-card-{{ product.id }}" data-category="{{ product.category or 'General' }}">
                 <div class="product-media">
                     {% if product.category %}<span class="category-tag">{{ product.category }}</span>{% endif %}
                     {% if product.video_url %}
-                    <button type="button" class="video-badge open-video-btn" data-video-url="{{ product.video_url }}" title="{{ _('Ver video') }}">
+                    <button type="button" class="video-badge open-detail-trigger" data-product-id="{{ product.id }}" data-video-url="{{ product.video_url }}" title="{{ _('Ver video y detalle') }}">
                         <i class="fas fa-play"></i> {{ _('Video') }}
                     </button>
                     {% endif %}
@@ -633,7 +680,7 @@
                         <div class="carousel-inner">
                             {% for img in product.images|sort(attribute='sort_order') %}
                             <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                <img src="{{ img.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" onclick="openLightbox('{{ img.image_url }}')" style="cursor: pointer;">
+                                <img src="{{ img.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" class="open-detail-trigger" data-product-id="{{ product.id }}" style="cursor: pointer;">
                             </div>
                             {% endfor %}
                         </div>
@@ -645,14 +692,19 @@
                         </button>
                     </div>
                     {% elif product.image_url %}
-                    <img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" onclick="openLightbox('{{ product.image_url }}')" style="cursor: pointer;">
+                    <img class="product-image open-detail-trigger" data-product-id="{{ product.id }}" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" style="cursor: pointer;">
                     {% else %}
                     <div class="product-image placeholder"><i class="fas fa-cube"></i><span>{{ _('Sin imagen') }}</span></div>
                     {% endif %}
                 </div>
                 <div class="product-body">
-                    <h4>{{ product.name }}</h4>
-                    {% if product.description %}<p class="desc">{{ product.description }}</p>{% endif %}
+                    <div class="product-clickable open-detail-trigger" data-product-id="{{ product.id }}">
+                        <h4>{{ product.name }}</h4>
+                        {% if product.description %}<p class="desc">{{ product.description }}</p>{% endif %}
+                    </div>
+                    <button type="button" class="btn-view-detail open-detail-trigger" data-product-id="{{ product.id }}">
+                        {{ _('Ver detalle completo') }} <i class="fas fa-arrow-right"></i>
+                    </button>
                     <div class="price-row">
                         <span class="price">${{ '%.2f'|format(product.retail_price) if product.retail_price and product.retail_price > 0 else ('%.2f'|format(product.suggested_price) if product.suggested_price else 'N/A') }}</span>
                         <span class="price-unit">{{ _('/ unidad') }}</span>
@@ -804,15 +856,30 @@
     </div>
 </div>
 
-<!-- Video Modal -->
-<div class="modal fade" id="videoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content bg-transparent border-0">
-            <div class="modal-header border-0">
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- Product Detail Modal -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="videoModalBody" style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden;"></div>
+                <div id="detailModalMedia"></div>
+                <p class="detail-full-desc" id="detailModalDescription"></p>
+                <div class="price-row">
+                    <span class="price" id="detailModalPrice"></span>
+                    <span class="price-unit">{{ _('/ unidad') }}</span>
+                </div>
+                <div class="wholesale-pills" id="detailModalWholesale"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="qty-input-group" style="flex: 1;">
+                    <input type="number" id="detailModalQuantity" min="1" value="1">
+                    <button type="button" class="btn-add" id="detailModalAddBtn">
+                        <i class="fas fa-plus"></i> {{ _('Agregar al carrito') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -864,6 +931,15 @@
                     parseFloat(this.dataset.threshold10),
                     parseFloat(this.dataset.threshold25)
                 );
+            });
+        });
+
+        // Cualquier disparador de detalle (imagen, video, título/descripción o el
+        // botón "Ver detalle completo") abre el modal con la ficha completa del producto.
+        document.querySelectorAll('.open-detail-trigger').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openProductDetail(parseInt(this.dataset.productId));
             });
         });
     });
@@ -922,8 +998,8 @@
         updateResultsCount();
     }
 
-    function addToCart(productId, productName, basePrice, enableDiscounts, threshold5, threshold10, threshold25) {
-        const quantity = parseInt(document.getElementById(`quantity-${productId}`).value) || 1;
+    function addToCart(productId, productName, basePrice, enableDiscounts, threshold5, threshold10, threshold25, quantityOverride) {
+        const quantity = quantityOverride || (parseInt(document.getElementById(`quantity-${productId}`).value) || 1);
 
         let price = basePrice;
         if (enableDiscounts) {
@@ -1021,30 +1097,100 @@
         return { kind: 'iframe', src: url };
     }
 
-    function openVideo(videoUrl) {
-        const embed = getVideoEmbed(videoUrl);
-        const body = document.getElementById('videoModalBody');
-        if (!embed) return;
+    // ---------- Ficha de producto (descripción completa + video/galería) ----------
+    // Se arma leyendo lo que ya está en la tarjeta (nada se vuelve a pedir al
+    // servidor), y el video/iframe recién se crea cuando el modal se abre para
+    // no cargar todos los videos de golpe al entrar al catálogo.
+    function openProductDetail(productId) {
+        const card = document.getElementById('product-card-' + productId);
+        if (!card) return;
 
-        if (embed.kind === 'video') {
-            body.innerHTML = `<video src="${embed.src}" controls autoplay style="width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
-        } else {
-            body.innerHTML = `<iframe src="${embed.src}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+        const name = card.querySelector('h4') ? card.querySelector('h4').textContent : '';
+        document.getElementById('detailModalTitle').textContent = name;
+
+        const videoBtn = card.querySelector('.video-badge');
+        const videoUrl = videoBtn ? videoBtn.dataset.videoUrl : '';
+        const images = Array.from(card.querySelectorAll('.product-media img'))
+            .map(img => img.src)
+            .filter(Boolean);
+
+        const mediaDiv = document.getElementById('detailModalMedia');
+        mediaDiv.innerHTML = '';
+
+        if (videoUrl) {
+            const embed = getVideoEmbed(videoUrl);
+            if (embed) {
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:14px;';
+                if (embed.kind === 'video') {
+                    wrap.innerHTML = `<video src="${embed.src}" controls autoplay style="width:100%;height:100%;object-fit:contain;"></video>`;
+                } else {
+                    wrap.innerHTML = `<iframe src="${embed.src}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+                }
+                mediaDiv.appendChild(wrap);
+            }
         }
 
-        new bootstrap.Modal(document.getElementById('videoModal')).show();
+        if (images.length) {
+            const mainImg = document.createElement('img');
+            mainImg.className = 'detail-main-img';
+            mainImg.src = images[0];
+            mainImg.alt = name;
+            mainImg.title = '{{ _("Click para ampliar") }}';
+            mainImg.addEventListener('click', () => openLightbox(mainImg.src));
+            mediaDiv.appendChild(mainImg);
+
+            if (images.length > 1) {
+                const thumbs = document.createElement('div');
+                thumbs.className = 'detail-thumbs';
+                images.forEach((src, idx) => {
+                    const t = document.createElement('img');
+                    t.src = src;
+                    if (idx === 0) t.classList.add('active');
+                    t.addEventListener('click', () => {
+                        mainImg.src = src;
+                        thumbs.querySelectorAll('img').forEach(i => i.classList.remove('active'));
+                        t.classList.add('active');
+                    });
+                    thumbs.appendChild(t);
+                });
+                mediaDiv.appendChild(thumbs);
+            }
+        } else if (!videoUrl) {
+            mediaDiv.innerHTML = `<div class="product-image placeholder" style="aspect-ratio:16/9;"><i class="fas fa-cube"></i><span>{{ _("Sin imagen") }}</span></div>`;
+        }
+
+        const descEl = card.querySelector('.desc');
+        const descTarget = document.getElementById('detailModalDescription');
+        descTarget.textContent = descEl ? descEl.textContent : '';
+        descTarget.style.display = descEl ? '' : 'none';
+
+        document.getElementById('detailModalPrice').textContent = card.querySelector('.price').textContent;
+        const wholesaleSrc = card.querySelector('.wholesale-pills');
+        document.getElementById('detailModalWholesale').innerHTML = wholesaleSrc ? wholesaleSrc.innerHTML : '';
+
+        const cardBtn = card.querySelector('.add-to-cart-btn');
+        const qtyInput = document.getElementById('detailModalQuantity');
+        qtyInput.value = 1;
+        document.getElementById('detailModalAddBtn').onclick = function() {
+            addToCart(
+                parseInt(cardBtn.dataset.productId),
+                cardBtn.dataset.productName,
+                parseFloat(cardBtn.dataset.price),
+                cardBtn.dataset.discountsEnabled === 'true',
+                parseFloat(cardBtn.dataset.threshold5),
+                parseFloat(cardBtn.dataset.threshold10),
+                parseFloat(cardBtn.dataset.threshold25),
+                parseInt(qtyInput.value) || 1
+            );
+        };
+
+        new bootstrap.Modal(document.getElementById('productDetailModal')).show();
     }
 
-    document.querySelectorAll('.open-video-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            openVideo(this.dataset.videoUrl);
-        });
-    });
-
-    // Al cerrar el modal de video, sacamos el iframe/video para que deje de sonar/reproducirse
-    document.getElementById('videoModal').addEventListener('hidden.bs.modal', function() {
-        document.getElementById('videoModalBody').innerHTML = '';
+    // Al cerrar la ficha, sacamos el video/iframe para que deje de sonar/reproducirse
+    document.getElementById('productDetailModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('detailModalMedia').innerHTML = '';
     });
 
     function showOrderForm() {
