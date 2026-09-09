@@ -149,6 +149,73 @@
     .banner.error { background: #fdeceb; color: #c23c2b; border: 1px solid #f6c9c2; }
     .banner.show { display: block; }
 
+    /* ---------- Photo upload ---------- */
+    .photo-upload-btn {
+        width: 100%;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        border: 2px dashed var(--accent);
+        border-radius: 12px;
+        padding: 18px 14px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .photo-upload-btn:active { background: var(--accent); color: #fff; }
+    .photo-thumbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .photo-thumb {
+        position: relative;
+        width: 78px;
+        height: 78px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid var(--border);
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-remove {
+        position: absolute;
+        top: 2px; right: 2px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: rgba(23,24,28,0.75);
+        color: #fff;
+        border: none;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .thumb-spinner {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .thumb-spinner::before {
+        content: "";
+        width: 22px; height: 22px;
+        border: 3px solid var(--border);
+        border-right-color: var(--accent);
+        border-radius: 50%;
+        animation: spin .6s linear infinite;
+    }
+    .link-fallback {
+        margin-top: 12px;
+    }
+    .link-fallback summary {
+        font-size: 0.82rem;
+        color: #8b8e95;
+        cursor: pointer;
+    }
+    .link-fallback textarea { margin-top: 8px; }
+
     /* ---------- Success screen ---------- */
     .success-screen {
         display: none;
@@ -226,11 +293,19 @@
                 </div>
 
                 <div class="field">
-                    <label>{{ _('Fotos (links para compartir de Google Drive)') }}</label>
-                    <textarea id="qPhotos" rows="4" placeholder="{{ _('Pegá acá uno o más links, uno por línea') }}"></textarea>
+                    <label>{{ _('Fotos') }}</label>
+                    <button type="button" class="photo-upload-btn" onclick="document.getElementById('qPhotoFileInput').click()">
+                        <i class="fas fa-camera"></i> {{ _('Sacar o elegir fotos') }}
+                    </button>
+                    <input type="file" id="qPhotoFileInput" accept="image/*" multiple style="display:none">
+                    <div class="photo-thumbs" id="qPhotoThumbs"></div>
                     <div class="hint">
-                        {{ _('En Drive: abrí la foto → Compartir → Copiar enlace, y pegalo acá. Podés pegar varios (uno por línea) para que se vean en carrusel.') }}
+                        {{ _('Subilas ahora, tal cual salen de la galería. El resto de los datos (y reemplazar por un link definitivo) lo podés completar después desde la computadora.') }}
                     </div>
+                    <details class="link-fallback">
+                        <summary>{{ _('¿Preferís pegar un link en vez de subir? (Drive, OneDrive...)') }}</summary>
+                        <textarea id="qPhotos" rows="3" placeholder="{{ _('Pegá acá uno o más links, uno por línea') }}"></textarea>
+                    </details>
                 </div>
 
                 <div class="field">
@@ -287,6 +362,72 @@
             errorBanner.textContent = '';
         }
 
+        // ---------- Photo upload (subida directa desde la galería/cámara del celular) ----------
+        let quickPhotos = [];
+        let uploadsInFlight = 0;
+        const qPhotoFileInput = document.getElementById('qPhotoFileInput');
+        const qPhotoThumbs = document.getElementById('qPhotoThumbs');
+
+        function setUploading(active) {
+            uploadsInFlight = Math.max(0, uploadsInFlight + (active ? 1 : -1));
+            submitBtn.disabled = uploadsInFlight > 0;
+            submitBtn.innerHTML = uploadsInFlight > 0
+                ? '<span style="width:1rem;height:1rem;border:2px solid #fff;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin .6s linear infinite;"></span> {{ _("Subiendo fotos...") }}'
+                : '<i class="fas fa-cloud-upload-alt"></i> {{ _("Guardar producto") }}';
+        }
+
+        function addThumb(id) {
+            const div = document.createElement('div');
+            div.className = 'photo-thumb';
+            div.id = id;
+            div.innerHTML = '<div class="thumb-spinner"></div>';
+            qPhotoThumbs.appendChild(div);
+            return div;
+        }
+
+        function removeQuickPhoto(url, id) {
+            quickPhotos = quickPhotos.filter(u => u !== url);
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        async function uploadQuickPhoto(file) {
+            const id = 'ph-' + Math.random().toString(36).slice(2);
+            const div = addThumb(id);
+            setUploading(true);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const resp = await fetch('{{ url_for("main.api_products_upload_image") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (resp.ok && data.success) {
+                    quickPhotos.push(data.url);
+                    div.innerHTML = `<img src="${data.url}" alt=""><button type="button" class="thumb-remove" onclick="removeQuickPhoto('${data.url}', '${id}')"><i class="fas fa-times"></i></button>`;
+                } else {
+                    div.remove();
+                    showError(data.error || '{{ _("No se pudo subir la foto.") }}');
+                }
+            } catch (err) {
+                div.remove();
+                showError('{{ _("Error al subir la foto: ") }}' + err.message);
+            } finally {
+                setUploading(false);
+            }
+        }
+
+        qPhotoFileInput.addEventListener('change', async function() {
+            const files = Array.from(this.files || []);
+            this.value = '';
+            for (const file of files) {
+                await uploadQuickPhoto(file);
+            }
+        });
+
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             clearError();
@@ -297,8 +438,14 @@
                 return;
             }
 
+            if (uploadsInFlight > 0) {
+                showError('{{ _("Esperá a que terminen de subir las fotos.") }}');
+                return;
+            }
+
             const photosRaw = document.getElementById('qPhotos').value;
-            const images = photosRaw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            const pastedLinks = photosRaw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            const images = [...quickPhotos, ...pastedLinks];
             const videoUrl = document.getElementById('qVideo').value.trim();
 
             const payload = {
@@ -343,6 +490,8 @@
             form.reset();
             document.getElementById('qDiscounts').checked = true;
             document.getElementById('qVisible').checked = true;
+            quickPhotos = [];
+            qPhotoThumbs.innerHTML = '';
             document.getElementById('successScreen').classList.remove('show');
             document.getElementById('formScreen').classList.remove('hide');
             clearError();
